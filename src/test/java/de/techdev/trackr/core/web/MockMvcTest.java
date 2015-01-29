@@ -102,7 +102,7 @@ public abstract class MockMvcTest extends TransactionalIntegrationTest {
      * <p>
      * See <a href="http://stackoverflow.com/questions/15203485/spring-test-security-how-to-mock-authentication">stackoverflow</a> for this idea.
      */
-    protected class MockSecurityContext implements SecurityContext {
+    public static class MockSecurityContext implements SecurityContext {
 
         private Authentication authentication;
 

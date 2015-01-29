@@ -1,6 +1,7 @@
 package de.techdev.trackr.domain.project.billtimes;
 
 import de.techdev.trackr.domain.AbstractDomainResourceTest;
+import de.techdev.trackr.domain.AbstractDomainResourceTest2;
 import de.techdev.trackr.domain.project.billtimes.BillableTime;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -12,12 +13,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Function;
 
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.*;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class BillableTimeResourceTest extends AbstractDomainResourceTest<BillableTime> {
+public class BillableTimeResourceTest extends AbstractDomainResourceTest2<BillableTime> {
 
     private final Function<BillableTime, MockHttpSession> sameEmployeeSessionProvider;
 
@@ -111,27 +112,27 @@ public class BillableTimeResourceTest extends AbstractDomainResourceTest<Billabl
         assertThat(updateLink(sameEmployeeSessionProvider, "project", "/projects/0"), isForbidden());
     }
 
-    @Test
-    public void findByDateBetweenAllowedForAdmin() throws Exception {
-        mockMvc.perform(
-                get("/billableTimes/search/findByDateBetween")
-                        .session(adminSession())
-                        .param("start", String.valueOf(new Date().getTime()))
-                        .param("end", String.valueOf(new Date().getTime()))
-        )
-                .andExpect(status().isOk());
-    }
+//    @Test
+//    public void findByDateBetweenAllowedForAdmin() throws Exception {
+//        mockMvc.perform(
+//                get("/billableTimes/search/findByDateBetween")
+//                        .session(adminSession())
+//                        .param("start", String.valueOf(new Date().getTime()))
+//                        .param("end", String.valueOf(new Date().getTime()))
+//        )
+//                .andExpect(status().isOk());
+//    }
 
-    @Test
-    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
-        mockMvc.perform(
-                get("/billableTimes/search/findByDateBetween")
-                        .session(supervisorSession())
-                        .param("start", String.valueOf(new Date().getTime()))
-                        .param("end", String.valueOf(new Date().getTime()))
-        )
-                .andExpect(status().isForbidden());
-    }
+//    @Test
+//    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
+//        mockMvc.perform(
+//                get("/billableTimes/search/findByDateBetween")
+//                        .session(supervisorSession())
+//                        .param("start", String.valueOf(new Date().getTime()))
+//                        .param("end", String.valueOf(new Date().getTime()))
+//        )
+//                .andExpect(status().isForbidden());
+//    }
 
     @Override
     protected String getJsonRepresentation(BillableTime billableTime) {

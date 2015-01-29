@@ -1,17 +1,18 @@
 package de.techdev.trackr.domain.employee.vacation;
 
 import de.techdev.trackr.domain.AbstractDomainResourceTest;
+import de.techdev.trackr.domain.AbstractDomainResourceTest2;
 import org.junit.Test;
 
 import javax.json.stream.JsonGenerator;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.isAccessible;
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.isMethodNotAllowed;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isAccessible;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isMethodNotAllowed;
 import static org.junit.Assert.*;
 
-public class HolidayResourceTest extends AbstractDomainResourceTest<Holiday> {
+public class HolidayResourceTest extends AbstractDomainResourceTest2<Holiday> {
 
     @Override
     protected String getResourceName() {

@@ -51,7 +51,7 @@ public abstract class AbstractDataOnDemand<S> {
         S one = repository.findOne(id);
         SecurityContextHolder.getContext().setAuthentication(null);
         return one;
-        }
+    }
 
     public Long getId(S obj) {
         try {

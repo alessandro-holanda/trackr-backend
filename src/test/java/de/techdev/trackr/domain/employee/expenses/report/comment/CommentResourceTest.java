@@ -1,6 +1,7 @@
 package de.techdev.trackr.domain.employee.expenses.report.comment;
 
 import de.techdev.trackr.domain.AbstractDomainResourceTest;
+import de.techdev.trackr.domain.AbstractDomainResourceTest2;
 import de.techdev.trackr.domain.employee.expenses.reports.comments.Comment;
 import org.junit.Test;
 
@@ -8,12 +9,12 @@ import javax.json.stream.JsonGenerator;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.isCreated;
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.isForbidden;
-import static de.techdev.trackr.domain.DomainResourceTestMatchers.isMethodNotAllowed;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isCreated;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isForbidden;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isMethodNotAllowed;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class CommentResourceTest extends AbstractDomainResourceTest<Comment> {
+public class CommentResourceTest extends AbstractDomainResourceTest2<Comment> {
 
     @Override
     protected String getResourceName() {
