@@ -9,11 +9,9 @@ import org.springframework.util.MultiValueMap;
 
 import static java.util.Arrays.asList;
 
-public abstract class AbstractDomainResourceSecurityTest<T> extends MockMvcTest2 {
+public abstract class AbstractDomainResourceSecurityTest extends MockMvcTest2 {
 
     protected abstract String getResourceName();
-
-    protected abstract String getJsonRepresentation(T item);
 
     private HttpEntity<String> getJsonEntity(String content) {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>() {{
@@ -34,22 +32,13 @@ public abstract class AbstractDomainResourceSecurityTest<T> extends MockMvcTest2
         return restTemplate.getForEntity(host + url, String.class);
     }
 
-    protected ResponseEntity create(T newObject) throws Exception {
-        return restTemplate.exchange(host + "/" + getResourceName() + "/", HttpMethod.POST, getJsonEntity(getJsonRepresentation(newObject)), String.class);
+    protected ResponseEntity create(String payload) throws Exception {
+        return restTemplate.exchange(host + "/" + getResourceName() + "/", HttpMethod.POST, getJsonEntity(payload), String.class);
     }
 
-//    /**
-//     * Get a random object and try to PUT it to the resource path
-//     *
-//     * @param sessionProvider Converts the random object to a {@link org.springframework.mock.web.MockHttpSession}. This can be used to set the session to a specific employee.
-//     * @return The result actions to perform further tests on.
-//     * @throws Exception
-//     */
-//    protected ResponseEntity update(Long id) throws Exception {
-//        T randomObject = dataOnDemand.getRandomObject();
-//        HttpEntity<?> request = getJsonEntity(getJsonRepresentation(randomObject));
-//        return restTemplate.exchange(host + "/" + getResourceName() + "/" + dataOnDemand.getId(randomObject), HttpMethod.PUT, request, String.class);
-//    }
+    protected ResponseEntity update(Long id, String payload) throws Exception {
+        return restTemplate.exchange(host + "/" + getResourceName() + "/" + id, HttpMethod.PUT, getJsonEntity(payload), String.class);
+    }
 
     /**
      * Perform a PUT on a link of a random resource (with header Content-Type: text/uri-list)
@@ -64,17 +53,9 @@ public abstract class AbstractDomainResourceSecurityTest<T> extends MockMvcTest2
         return restTemplate.exchange(host + "/" + getResourceName() + "/" + id + "/" + linkName, HttpMethod.PUT, request, String.class);
     }
 
-//    /**
-//     * Get a random object and try to PATCH with the given string it to the resource path.
-//     *
-//     * @param session The mock session to use, e.g. admin or employee
-//     * @return The result actions to perform further tests on.
-//     * @throws Exception
-//     */
-//    protected ResponseEntity updateViaPatch(String patch) throws Exception {
-//        T randomObject = dataOnDemand.getRandomObject();
-//        return restTemplate.exchange(host + "/" + getResourceName() + "/" + dataOnDemand.getId(randomObject), HttpMethod.PATCH, getJsonEntity(patch), String.class);
-//    }
+    protected ResponseEntity updateViaPatch(Long id, String patch) throws Exception {
+        return restTemplate.exchange(host + "/" + getResourceName() + "/" + id, HttpMethod.PATCH, getJsonEntity(patch), String.class);
+    }
 
     protected ResponseEntity remove(Long id) throws Exception {
         return removeUrl("/" + getResourceName() + "/" + id);

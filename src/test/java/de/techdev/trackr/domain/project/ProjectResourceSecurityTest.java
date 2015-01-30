@@ -5,8 +5,6 @@ import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
 
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
 import java.math.BigDecimal;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
@@ -15,7 +13,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("resourceTest.sql")
 @Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_ADMIN")
-public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityTest<Project> {
+public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityTest {
+
+    private ProjectJsonGenerator jsonGenerator = new ProjectJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -36,14 +36,15 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
 
     @Test
     public void createAllowedForAdmin() throws Exception {
-        Project project = getNewTransientObject(1);
-        assertThat(create(project), isCreated());
+        String json = jsonGenerator.start().build();
+        assertThat(create(json), isCreated());
     }
 
-//    @Test
-//    public void updateAllowedForAdmin() throws Exception {
-//        assertThat(update(adminSession()), isUpdated());
-//    }
+    @Test
+    public void updateAllowedForAdmin() throws Exception {
+        String json = jsonGenerator.start().apply(p -> p.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
+    }
 
     @Test
     public void deleteAllowedForAdmin() throws Exception {
@@ -53,15 +54,16 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     @Test
     @OAuthToken("ROLE_SUPERVISOR")
     public void createForbiddenForSupervisor() throws Exception {
-        Project project = getNewTransientObject(1);
-        assertThat(create(project), isForbidden());
+        String json = jsonGenerator.start().build();
+        assertThat(create(json), isForbidden());
     }
 
-//    @Test
-//    @OAuthToken(value = "ROLE_SUPERVISOR")
-//    public void updateForbiddenForSupervisor() throws Exception {
-//        assertThat(update(supervisorSession()), isForbidden());
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR")
+    public void updateForbiddenForSupervisor() throws Exception {
+        String json = jsonGenerator.start().apply(p -> p.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
+    }
 
     @Test
     @OAuthToken("ROLE_SUPERVISOR")
@@ -144,31 +146,5 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
         project.setHourlyRate(BigDecimal.TEN.multiply(new BigDecimal(i)));
         project.setVolume(i);
         return project;
-    }
-
-    @Override
-    protected String getJsonRepresentation(Project project) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        jg.writeStartObject()
-          .write("name", project.getName())
-          .write("identifier", project.getIdentifier())
-          .write("volume", project.getVolume())
-          .write("hourlyCostRate", project.getDailyRate())
-          .write("salary", project.getHourlyRate())
-          .write("title", project.getFixedPrice());
-
-        if (project.getCompany() != null) {
-            jg.write("company", "/api/companies/" + project.getCompany().getId());
-        }
-
-        if (project.getDebitor() != null) {
-            jg.write("debitor", "/api/companies/" + project.getDebitor().getId());
-        }
-        if (project.getId() != null) {
-            jg.write("id", project.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
     }
 }

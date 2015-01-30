@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @Sql("contactPerson/resourceTest.sql")
 @Sql(value = "contactPerson/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_SUPERVISOR")
-public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSecurityTest<ContactPerson> {
+public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
 
     @Override
@@ -122,7 +122,6 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
 //                .andExpect(status().isForbidden());
 //    }
 
-    @Override
     protected String getJsonRepresentation(ContactPerson contactPerson) {
         StringWriter writer = new StringWriter();
         JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);

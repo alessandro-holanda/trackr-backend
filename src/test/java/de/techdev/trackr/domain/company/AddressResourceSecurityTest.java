@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("address/resourceTest.sql")
 @Sql(value = "address/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_ADMIN")
-public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityTest<Address> {
+public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     @Override
     protected String getResourceName() {
@@ -69,7 +69,6 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
         assertThat(remove(0L), isMethodNotAllowed());
     }
 
-    @Override
     protected String getJsonRepresentation(Address address) {
         StringWriter writer = new StringWriter();
         JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);

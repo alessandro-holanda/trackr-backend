@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @Sql("resourceTest.sql")
 @Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken
-public class SickDaysResourceSecurityTest extends AbstractDomainResourceSecurityTest<SickDays> {
+public class SickDaysResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     @Override
     protected String getResourceName() {
@@ -106,7 +106,6 @@ public class SickDaysResourceSecurityTest extends AbstractDomainResourceSecurity
         );
     }
 
-    @Override
     protected String getJsonRepresentation(SickDays sickDays) {
         StringWriter writer = new StringWriter();
         JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);

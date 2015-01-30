@@ -15,14 +15,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("resourceTest.sql")
 @Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_ADMIN")
-public class InvoiceResourceSecurityTest extends AbstractDomainResourceSecurityTest<Invoice> {
+public class InvoiceResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     @Override
     protected String getResourceName() {
         return "invoices";
     }
 
-    @Override
     protected String getJsonRepresentation(Invoice invoice) {
         StringWriter writer = new StringWriter();
         JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);

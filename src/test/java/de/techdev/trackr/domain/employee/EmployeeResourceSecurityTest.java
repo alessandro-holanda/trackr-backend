@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("resourceTest.sql")
 @Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_SUPERVISOR")
-public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurityTest<Employee> {
+public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     @Override
     protected String getResourceName() {
@@ -86,7 +86,6 @@ public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurity
         assertThat(remove(0L), isForbidden());
     }
 
-    @Override
     protected String getJsonRepresentation(Employee employee) {
         StringWriter writer = new StringWriter();
         JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
