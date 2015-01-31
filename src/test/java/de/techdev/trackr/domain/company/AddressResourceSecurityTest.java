@@ -49,20 +49,25 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
         assertThat(updateViaPatch(0L, "{\"street\": \"test\"}"), isUpdated());
     }
 
-//    @Test
-//    public void createNotAllowedForSupervisor() throws Exception {
-//        assertThat(create(supervisorSession()), isForbidden());
-//    }
+    @Test
+	@OAuthToken("ROLE_SUPERVISOR")
+    public void createNotAllowedForSupervisor() throws Exception {
+		String json = jsonGenerator.start().build();
+        assertThat(create(json), isForbidden());
+    }
 
-//    @Test
-//    public void putForbiddenForSupervisor() throws Exception {
-//        assertThat(update(supervisorSession()), isForbidden());
-//    }
+    @Test
+	@OAuthToken("ROLE_SUPERVISOR")
+    public void putForbiddenForSupervisor() throws Exception {
+		String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
+    }
 
-//    @Test
-//    public void patchForbiddenForSupervisor() throws Exception {
-//        assertThat(updateViaPatch(supervisorSession(), "{\"street\": \"test\"}"), isForbidden());
-//    }
+    @Test
+	@OAuthToken("ROLE_SUPERVISOR")
+    public void patchForbiddenForSupervisor() throws Exception {
+        assertThat(updateViaPatch(0L, "{\"street\": \"test\"}"), isForbidden());
+    }
 
     @Test
     public void deleteNotExported() throws Exception {
