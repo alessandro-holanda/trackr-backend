@@ -5,21 +5,15 @@ import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
 
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @Sql("contactPerson/resourceTest.sql")
 @Sql(value = "contactPerson/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthToken("ROLE_SUPERVISOR")
 public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
+    private ContactPersonJsonGenerator jsonGenerator = new ContactPersonJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -38,35 +32,42 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
         assertThat(one(0L), isAccessible());
     }
 
-//    @Test
-//    public void postAllowedForSupervisor() throws Exception {
-//        assertThat(create(supervisorSession()), isCreated());
-//    }
+    @Test
+    public void postAllowedForSupervisor() throws Exception {
+        String json = jsonGenerator.withCompanyId(0L).start().build();
+        assertThat(create(json), isCreated());
+    }
 
-//    @Test
-//    public void putAllowedForSupervisor() throws Exception {
-//        assertThat(update(supervisorSession()), isUpdated());
-//    }
+    @Test
+    public void putAllowedForSupervisor() throws Exception {
+        String json = jsonGenerator.withCompanyId(0L).start().apply(c -> c.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
+    }
 
-//    @Test
-//    public void putNotAllowedForEmployee() throws Exception {
-//        assertThat(update(employeeSession()), isForbidden());
-//    }
+    @Test
+    @OAuthToken
+    public void putNotAllowedForEmployee() throws Exception {
+        String json = jsonGenerator.withCompanyId(0L).start().apply(c -> c.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
+    }
 
-//    @Test
-//    public void patchAllowedForSupervisor() throws Exception {
-//        assertThat(updateViaPatch(supervisorSession(), "{\"firstName\": \"Test\"}"), isUpdated());
-//    }
+    @Test
+    public void patchAllowedForSupervisor() throws Exception {
+        assertThat(updateViaPatch(0L, "{\"firstName\": \"Test\"}"), isUpdated());
+    }
 
-//    @Test
-//    public void patchNotAllowedForEmployee() throws Exception {
-//        assertThat(updateViaPatch(employeeSession(), "{\"firstName\": \"Test\"}"), isForbidden());
-//    }
+    @Test
+    @OAuthToken
+    public void patchNotAllowedForEmployee() throws Exception {
+        assertThat(updateViaPatch(0L, "{\"firstName\": \"Test\"}"), isForbidden());
+    }
 
-//    @Test
-//    public void postNotAllowedForEmployee() throws Exception {
-//        assertThat(create(employeeSession()), isForbidden());
-//    }
+    @Test
+    @OAuthToken
+    public void postNotAllowedForEmployee() throws Exception {
+        String json = jsonGenerator.withCompanyId(0L).start().build();
+        assertThat(create(json), isForbidden());
+    }
 
 //    @Test
 //    public void constraintViolation() throws Exception {
@@ -122,24 +123,4 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
 //                .andExpect(status().isForbidden());
 //    }
 
-    protected String getJsonRepresentation(ContactPerson contactPerson) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        jg.writeStartObject()
-          .write("firstName", contactPerson.getFirstName())
-          .write("lastName", contactPerson.getLastName())
-          .write("salutation", contactPerson.getSalutation())
-          .write("email", contactPerson.getEmail())
-          .write("phone", contactPerson.getPhone())
-          .write("company", "/api/companies/" + contactPerson.getCompany().getId());
-
-        if (contactPerson.getRoles() != null) {
-            jg.write("roles", contactPerson.getRoles());
-        }
-        if (contactPerson.getId() != null) {
-            jg.write("id", contactPerson.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
-    }
 }
