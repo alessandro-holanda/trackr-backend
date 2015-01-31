@@ -13,7 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @OAuthToken("ROLE_ADMIN")
 public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
-	private AddressJsonGenerator jsonGenerator = new AddressJsonGenerator();
+    private AddressJsonGenerator jsonGenerator = new AddressJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -34,14 +34,14 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
 
     @Test
     public void createAllowedForAdmin() throws Exception {
-		String json = jsonGenerator.start().build();
-		assertThat(create(json), isCreated());
+        String json = jsonGenerator.start().build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
     public void putAllowedForAdmin() throws Exception {
-		String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
-		assertThat(update(0L, json), isUpdated());
+        String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
     }
 
     @Test
@@ -50,21 +50,21 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-	@OAuthToken("ROLE_SUPERVISOR")
+    @OAuthToken("ROLE_SUPERVISOR")
     public void createNotAllowedForSupervisor() throws Exception {
-		String json = jsonGenerator.start().build();
+        String json = jsonGenerator.start().build();
         assertThat(create(json), isForbidden());
     }
 
     @Test
-	@OAuthToken("ROLE_SUPERVISOR")
+    @OAuthToken("ROLE_SUPERVISOR")
     public void putForbiddenForSupervisor() throws Exception {
-		String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
+        String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
     }
 
     @Test
-	@OAuthToken("ROLE_SUPERVISOR")
+    @OAuthToken("ROLE_SUPERVISOR")
     public void patchForbiddenForSupervisor() throws Exception {
         assertThat(updateViaPatch(0L, "{\"street\": \"test\"}"), isForbidden());
     }
