@@ -3,9 +3,14 @@ package de.techdev.trackr.domain.company;
 import de.techdev.test.OAuthToken;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.util.LinkedMultiValueMap;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("contactPerson/resourceTest.sql")
@@ -89,38 +94,28 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
         assertThat(remove(0L), isForbidden());
     }
 
-//    @Test
-//    public void updateCompanyForbiddenForEmployee() throws Exception {
-//        ContactPerson contactPerson = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                put("/contactPersons/" + contactPerson.getId() + "/company")
-//                        .session(employeeSession())
-//                        .header("Content-Type", "text/uri-list")
-//                        .content("companies/0")
-//        )
-//                .andExpect(status().isForbidden());
-//    }
+    @Test
+    @OAuthToken("ROLE_EMPLOYEE")
+    public void updateCompanyForbiddenForEmployee() throws Exception {
+        LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.put("Content-Type", asList("text/uri-list"));
+        HttpEntity<String> requestEntity = new HttpEntity<>("/companies/0", headers);
+        ResponseEntity<String> response = restTemplate.exchange(host + "/contactPersons/0/company", HttpMethod.PUT, requestEntity, String.class);
+        assertThat(response, isForbidden());
+    }
 
-//    @Test
-//    public void updateCompanyAllowedForSupervisor() throws Exception {
-//        ContactPerson contactPerson = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                put("/contactPersons/" + contactPerson.getId() + "/company")
-//                        .session(supervisorSession())
-//                        .header("Content-Type", "text/uri-list")
-//                        .content("companies/0")
-//        )
-//                .andExpect(status().isNoContent());
-//    }
+    @Test
+    public void updateCompanyAllowedForSupervisor() throws Exception {
+        LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.put("Content-Type", asList("text/uri-list"));
+        HttpEntity<String> requestEntity = new HttpEntity<>("/companies/0", headers);
+        ResponseEntity<String> response = restTemplate.exchange(host + "/contactPersons/0/company", HttpMethod.PUT, requestEntity, String.class);
+        assertThat(response, isNoContent());
+    }
 
-//    @Test
-//    public void deleteCompanyForbiddenForSupervisor() throws Exception {
-//        ContactPerson contactPerson = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                delete("/contactPersons/" + contactPerson.getId() + "/company")
-//                        .session(supervisorSession())
-//        )
-//                .andExpect(status().isForbidden());
-//    }
+    @Test
+    public void deleteCompanyForbiddenForSupervisor() throws Exception {
+        assertThat(removeUrl("/contactPersons/0/company"), isForbidden());
+    }
 
 }
