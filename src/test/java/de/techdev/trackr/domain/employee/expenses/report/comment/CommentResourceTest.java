@@ -1,20 +1,19 @@
 package de.techdev.trackr.domain.employee.expenses.report.comment;
 
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.employee.expenses.reports.comments.Comment;
+import de.techdev.test.OAuthToken;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
+import org.springframework.test.context.jdbc.Sql;
 
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-
-import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isCreated;
-import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isForbidden;
-import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isMethodNotAllowed;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class CommentResourceTest extends AbstractDomainResourceTest2<Comment> {
+@Sql("resourceTest.sql")
+@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthToken
+public class CommentResourceTest extends AbstractDomainResourceSecurityTest {
+
+    private CommentJsonGenerator jsonGenerator = new CommentJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -23,50 +22,37 @@ public class CommentResourceTest extends AbstractDomainResourceTest2<Comment> {
 
     @Test
     public void rootNotExported() throws Exception {
-        assertThat(root(employeeSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
     public void oneNotExported() throws Exception {
-        assertThat(one(employeeSession()), isMethodNotAllowed());
+        assertThat(one(0L), isMethodNotAllowed());
     }
 
     @Test
     public void createAllowedForOwningEmployee() throws Exception {
-        assertThat(create(comment -> employeeSession(comment.getEmployee().getEmail())), isCreated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withReportId(0L).build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void createAllowedForSupervisor() throws Exception {
-        assertThat(create(supervisorSession()), isCreated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withReportId(0L).build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN")
     public void updateForbidden() throws Exception {
-        assertThat(update(adminSession()), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).withReportId(0L).apply(c -> c.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN")
     public void deleteNotExported() throws Exception {
-        assertThat(remove(adminSession()), isMethodNotAllowed());
-    }
-
-    @Override
-    protected String getJsonRepresentation(Comment comment) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        jg.writeStartObject()
-                .write("text", comment.getText())
-                .write("employee", "/employees/" + comment.getEmployee().getId())
-                .write("submissionDate", sdf.format(comment.getSubmissionDate()))
-                .write("travelExpenseReport", "/travelExpenseReports/" + comment.getTravelExpenseReport().getId());
-
-
-        if (comment.getId() != null) {
-            jg.write("id", comment.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
+        assertThat(remove(0L), isMethodNotAllowed());
     }
 }
