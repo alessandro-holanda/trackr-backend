@@ -1,34 +1,21 @@
 package de.techdev.trackr.domain.project.worktimes;
 
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.project.worktimes.WorkTime;
+import de.techdev.test.OAuthToken;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.mock.web.MockHttpSession;
-
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.function.Function;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.echocat.jomon.testing.BaseMatchers.isNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class WorkTimeResourceTest extends AbstractDomainResourceTest2<WorkTime> {
+@Sql("resourceTest.sql")
+@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthToken()
+public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
 
-    private final Function<WorkTime, MockHttpSession> sameEmployeeSessionProvider;
-    private final Function<WorkTime, MockHttpSession> otherEmployeeSessionProvider;
-
-    public WorkTimeResourceTest() {
-        sameEmployeeSessionProvider = workTime -> employeeSession(workTime.getEmployee().getEmail());
-        otherEmployeeSessionProvider = workTime -> employeeSession(workTime.getEmployee().getEmail() + 1);
-    }
+    private WorkTimeJsonGenerator jsonGenerator = new WorkTimeJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -37,52 +24,61 @@ public class WorkTimeResourceTest extends AbstractDomainResourceTest2<WorkTime> 
 
     @Test
     public void rootNotExported() throws Exception {
-        assertThat(root(employeeSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
     public void oneAllowedForOwner() throws Exception {
-        assertThat(one(sameEmployeeSessionProvider), isAccessible());
+        assertThat(one(0L), isAccessible());
     }
 
     @Test
+    @OAuthToken(username = "someone.else@techdev.de")
     public void oneForbiddenForOther() throws Exception {
-        assertThat(one(otherEmployeeSessionProvider), isForbidden());
+        assertThat(one(0L), isForbidden());
     }
 
     @Test
     public void createAllowedForEveryoneIfIsEmployee() throws Exception {
-        assertThat(create(sameEmployeeSessionProvider), isCreated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
     public void updateAllowedForOwner() throws Exception {
-        assertThat(update(sameEmployeeSessionProvider), isUpdated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(w -> w.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void updateAllowedForAdmin() throws Exception {
-        assertThat(update(adminSession()), isUpdated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(w -> w.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateNotAllowedForSupervisor() throws Exception {
-        assertThat(update(supervisorSession()), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(w -> w.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
     public void deleteAllowedForOwner() throws Exception {
-        assertThat(remove(sameEmployeeSessionProvider), isNoContent());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void deleteAllowedForAdmin() throws Exception {
-        assertThat(remove(adminSession()), isNoContent());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void deleteNotAllowedForSupervisor() throws Exception {
-        assertThat(remove(supervisorSession()), isForbidden());
+        assertThat(remove(0L), isForbidden());
     }
 
     /**
@@ -95,228 +91,125 @@ public class WorkTimeResourceTest extends AbstractDomainResourceTest2<WorkTime> 
     @Test
     @Ignore
     public void updateEmployeeNotAllowed() throws Exception {
-        assertThat(updateLink(sameEmployeeSessionProvider, "employee", "/employees/0"), isMethodNotAllowed());
+        assertThat(updateLink(0L, "employee", "/employees/0"), isMethodNotAllowed());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN")
     public void deleteEmployeeNotAllowed() throws Exception {
-        WorkTime workTime = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(adminSession(), "/workTimes/" + workTime.getId() + "/employee"), isForbidden());
+        assertThat(removeUrl("/workTimes/0/employee"), isForbidden());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN")
     public void deleteProjectNotAllowed() throws Exception {
-        WorkTime workTime = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(adminSession(), "/workTimes/" + workTime.getId() + "/project"), isForbidden());
+        assertThat(removeUrl("/workTimes/0/project"), isForbidden());
     }
 
     @Test
     public void updateProjectAllowedForOwner() throws Exception {
-        assertThat(updateLink(sameEmployeeSessionProvider, "project", "/projects/0"), isNoContent());
+        assertThat(updateLink(0L, "project", "/projects/0"), isNoContent());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void updateProjectAllowedForAdmin() throws Exception {
-        assertThat(updateLink(adminSession(), "project", "/projects/0"), isNoContent());
+        assertThat(updateLink(0L, "project", "/projects/0"), isNoContent());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateProjectForbiddenForSupervisor() throws Exception {
-        assertThat(updateLink(supervisorSession(), "project", "/projects/0"), isForbidden());
+        assertThat(updateLink(0L, "project", "/projects/0"), isForbidden());
     }
 
-//    @Test
-//    public void findByEmployeeAndDateOrderByStartTimeAscAllowedForOwner() throws Exception {
-//        WorkTime workTime = dataOnDemand.getRandomObject();
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc")
-//                        .session(employeeSession(workTime.getEmployee().getEmail()))
-//                        .param("employee", workTime.getEmployee().getId().toString())
-//                        .param("date", sdf.format(workTime.getDate())))
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.workTimes[0].id", isNotNull()));
-//    }
+    @Test
+    public void findByEmployeeAndDateOrderByStartTimeAscAllowedForOwner() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc?employee=0&date=2014-01-01", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByEmployeeAndDateOrderByStartTimeAscAllowedForSupervisor() throws Exception {
-//        WorkTime workTime = dataOnDemand.getRandomObject();
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc")
-//                        .session(supervisorSession())
-//                        .param("employee", workTime.getEmployee().getId().toString())
-//                        .param("date", sdf.format(workTime.getDate())))
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.workTimes[0].id", isNotNull()));
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    public void findByEmployeeAndDateOrderByStartTimeAscAllowedForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc?employee=0&date=2014-01-01", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByDateBetweenAllowedForAdmin() throws Exception {
-//        mockMvc.perform(
-//                get("/workTimes/search/findByDateBetween")
-//                        .session(adminSession())
-//                        .param("start", String.valueOf(new Date().getTime()))
-//                        .param("end", String.valueOf(new Date().getTime())))
-//                .andExpect(status().isOk());
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_ADMIN")
+    public void findByDateBetweenAllowedForAdmin() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
-//        mockMvc.perform(
-//                get("/workTimes/search/findByDateBetween")
-//                        .session(supervisorSession())
-//                        .param("start", String.valueOf(new Date().getTime()))
-//                        .param("end", String.valueOf(new Date().getTime())))
-//                .andExpect(status().isForbidden());
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isForbidden());
+    }
 
-//    @Test
-//    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscAllowedForOwner() throws Exception {
-//        WorkTime workTime1 = dataOnDemand.getRandomObject();
-//        WorkTime workTime2 = dataOnDemand.getRandomObject();
-//        workTime2.setEmployee(workTime1.getEmployee());
-//        repository.save(workTime2);
-//        Date low, high;
-//        if(workTime1.getDate().compareTo(workTime2.getDate()) <= 0) {
-//            low = workTime1.getDate();
-//            high = workTime2.getDate();
-//        } else {
-//            low = workTime2.getDate();
-//            high = workTime1.getDate();
-//        }
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc")
-//                        .session(employeeSession(workTime1.getEmployee().getEmail()))
-//                        .param("employee", workTime1.getEmployee().getId().toString())
-//                        .param("start", sdf.format(low))
-//                        .param("end", sdf.format(high)))
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.workTimes[0].id", isNotNull()));
-//    }
+    @Test
+    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscAllowedForOwner() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc?employee=0&start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
-//        WorkTime workTime1 = dataOnDemand.getRandomObject();
-//        WorkTime workTime2 = dataOnDemand.getRandomObject();
-//        workTime2.setEmployee(workTime1.getEmployee());
-//        repository.save(workTime2);
-//        Date low, high;
-//        if(workTime1.getDate().compareTo(workTime2.getDate()) <= 0) {
-//            low = workTime1.getDate();
-//            high = workTime2.getDate();
-//        } else {
-//            low = workTime2.getDate();
-//            high = workTime1.getDate();
-//        }
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc")
-//                        .session(supervisorSession())
-//                        .param("employee", workTime1.getEmployee().getId().toString())
-//                        .param("start", sdf.format(low))
-//                        .param("end", sdf.format(high)))
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.workTimes[0].id", isNotNull()));
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc?employee=0&start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
 
     /**
      * This does not work because the accessDeniedException is thrown somewhere where spring-data-rest does not catch it.
      * So we get HTTP 400 instead of 403.
      * TODO: find out how to get a 403
-     * @throws Exception
      */
-//    @Test
-//    @Ignore
-//    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscForbiddenForOther() throws Exception {
-//        WorkTime workTime = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc")
-//                        .session(employeeSession(workTime.getEmployee().getEmail() + 1))
-//                        .param("employee", workTime.getEmployee().getId().toString())
-//                        .param("start", "2014-01-01")
-//                        .param("end", "2014-12-01"))
-//               .andExpect(status().isForbidden());
-//    }
+    @Test
+    @Ignore
+    @OAuthToken(username = "someone.else@techdev.de")
+    public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscForbiddenForOther() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc?employee=0&start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isForbidden());
+    }
 
     /**
      * This does not work because the accessDeniedException is thrown somewhere where spring-data-rest does not catch it.
      * So we get HTTP 400 instead of 403.
      * TODO: find out how to get a 403
-     * @throws Exception
      */
-//    @Test
-//    @Ignore
-//    public void findByEmployeeAndDateOrderByStartTimeAscForbiddenForOther() throws Exception {
-//        WorkTime workTime = dataOnDemand.getRandomObject();
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc")
-//                        .session(employeeSession(workTime.getEmployee().getEmail()))
-//                        .param("employee", workTime.getEmployee().getId().toString())
-//                        .param("date", sdf.format(workTime.getDate())))
-//               .andExpect(status().isForbidden());
-//    }
-
-//    @Test
-//    public void findByProjectAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
-//        WorkTime workTime1 = dataOnDemand.getRandomObject();
-//        WorkTime workTime2 = dataOnDemand.getRandomObject();
-//        workTime2.setProject(workTime1.getProject());
-//        repository.save(workTime2);
-//        Date low, high;
-//        if(workTime1.getDate().compareTo(workTime2.getDate()) <= 0) {
-//            low = workTime1.getDate();
-//            high = workTime2.getDate();
-//        } else {
-//            low = workTime2.getDate();
-//            high = workTime1.getDate();
-//        }
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//        mockMvc.perform(
-//                get("/workTimes/search/findByProjectAndDateBetweenOrderByDateAscStartTimeAsc")
-//                        .session(supervisorSession())
-//                        .param("project", workTime1.getProject().getId().toString())
-//                        .param("start", sdf.format(low))
-//                        .param("end", sdf.format(high)))
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.workTimes[0].id", isNotNull()));
-//    }
-
-//    @Test
-//    public void findByProjectAndDateBetweenOrderByDateAscStartTimeAscForbiddenForEmployee() throws Exception {
-//        WorkTime workTime = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/workTimes/search/findByProjectAndDateBetweenOrderByDateAscStartTimeAsc")
-//                        .session(employeeSession())
-//                        .param("project", workTime.getProject().getId().toString())
-//                        .param("start", "2014-01-01")
-//                        .param("end", "2014-12-01"))
-//               .andExpect(status().isForbidden());
-//    }
-
-
-    @Override
-    protected String getJsonRepresentation(WorkTime workTime) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        jg.writeStartObject()
-          .write("date", sdf.format(workTime.getDate()))
-          .write("startTime", workTime.getStartTime().toString())
-          .write("endTime", workTime.getEndTime().toString())
-          .write("employee", "/employees/" + workTime.getEmployee().getId())
-          .write("project", "/projects/" + workTime.getProject().getId());
-
-        if (workTime.getComment() != null) {
-            jg.write("comment", workTime.getComment());
-        }
-
-        if (workTime.getId() != null) {
-            jg.write("id", workTime.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
+    @Test
+    @Ignore
+    @OAuthToken(username = "someone.else@techdev.de")
+    public void findByEmployeeAndDateOrderByStartTimeAscForbiddenForOther() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc?employee=0&date=2014-01-01", String.class);
+        assertThat(response, isForbidden());
     }
+
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR")
+    public void findByProjectAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByProjectAndDateBetweenOrderByDateAscStartTimeAsc?project=0&start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
+
+    @Test
+    public void findByProjectAndDateBetweenOrderByDateAscStartTimeAscForbiddenForEmployee() throws Exception {
+        ResponseEntity<String> response = restTemplate
+                .getForEntity(host + "/workTimes/search/findByProjectAndDateBetweenOrderByDateAscStartTimeAsc?project=0&start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isForbidden());
+    }
+
 }
