@@ -71,4 +71,10 @@ public class VacationRequestJsonGenerator extends AbstractJsonGenerator<Vacation
     protected VacationRequestJsonGenerator getSelf() {
         return this;
     }
+
+    @Override
+    protected void reset() {
+        employeeId = null;
+        approverId = null;
+    }
 }

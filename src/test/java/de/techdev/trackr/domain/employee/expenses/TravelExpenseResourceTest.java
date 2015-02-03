@@ -1,35 +1,21 @@
 package de.techdev.trackr.domain.employee.expenses;
 
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.employee.expenses.reports.Report;
+import de.techdev.test.OAuthToken;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.mock.web.MockHttpSession;
-
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.function.Function;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.echocat.jomon.testing.BaseMatchers.isNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class TravelExpenseResourceTest extends AbstractDomainResourceTest2<TravelExpense> {
+@Sql("resourceTest.sql")
+@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthToken
+public class TravelExpenseResourceTest extends AbstractDomainResourceSecurityTest {
 
-    private final Function<TravelExpense, MockHttpSession> sameEmployeeSessionProvider;
-    private final Function<TravelExpense, MockHttpSession> otherEmployeeSessionProvider;
-
-    public TravelExpenseResourceTest() {
-        sameEmployeeSessionProvider = travelExpense -> employeeSession(travelExpense.getReport().getEmployee().getEmail());
-        otherEmployeeSessionProvider = travelExpense -> employeeSession(travelExpense.getReport().getEmployee().getEmail() + 1);
-    }
+    private TravelExpenseJsonGenerator jsonGenerator = new TravelExpenseJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -37,111 +23,62 @@ public class TravelExpenseResourceTest extends AbstractDomainResourceTest2<Trave
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void rootNotExported() throws Exception {
-        assertThat(root(adminSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void oneNotExported() throws Exception {
-        assertThat(one(adminSession()), isMethodNotAllowed());
+        assertThat(one(0L), isMethodNotAllowed());
     }
 
-//    @Test
-//    public void createAllowedForSelf() throws Exception {
-//        TravelExpense travelExpense = dataOnDemand.getNewTransientObject(500);
-//        travelExpense.getReport().setStatus(Report.Status.PENDING);
-//        repository.save(travelExpense);
-//        mockMvc.perform(
-//                post("/travelExpenses/")
-//                        .session(sameEmployeeSessionProvider.apply(travelExpense))
-//                        .content(getJsonRepresentation(travelExpense))
-//        )
-//                .andExpect(status().isCreated())
-//                .andExpect(jsonPath("id", isNotNull()));
-//    }
+    @Test
+    public void createAllowedForSelf() throws Exception {
+        String json = jsonGenerator.start().withReportId(0L).build();
+        assertThat(create(json), isCreated());
+    }
 
     @Test
     @Ignore
+    @OAuthToken(username = "someone.else@techdev.de")
     public void createNotAllowedForOther() throws Exception {
-        assertThat(create(otherEmployeeSessionProvider), isForbidden());
+        String json = jsonGenerator.start().withReportId(0L).build();
+        assertThat(create(json), isForbidden());
     }
 
-//    @Test
-//    public void updateAllowedForSelf() throws Exception {
-//        TravelExpense travelExpense = dataOnDemand.getRandomObject();
-//        travelExpense.getReport().setStatus(Report.Status.PENDING);
-//        repository.save(travelExpense);
-//        mockMvc.perform(
-//                put("/travelExpenses/" + travelExpense.getId())
-//                        .session(sameEmployeeSessionProvider.apply(travelExpense))
-//                        .content(getJsonRepresentation(travelExpense))
-//        )
-//                .andExpect(status().isOk())
-//                .andExpect(jsonPath("id", isNotNull()));
-//    }
+    @Test
+    public void updateAllowedForSelf() throws Exception {
+        String json = jsonGenerator.start().withReportId(0L).apply(t -> t.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
+    }
 
     @Test
     public void deletePendingAllowed() throws Exception {
-        TravelExpense travelExpense = dataOnDemand.getRandomObject();
-        travelExpense.getReport().setStatus(Report.Status.PENDING);
-        repository.save(travelExpense);
-        assertThat(removeUrl(employeeSession(travelExpense.getReport().getEmployee().getEmail()), "/travelExpenses/" + travelExpense.getId()), isNoContent());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
     public void deleteAcceptedNotAllowed() throws Exception {
-        TravelExpense travelExpense = dataOnDemand.getRandomObject();
-        travelExpense.getReport().setStatus(Report.Status.APPROVED);
-        repository.save(travelExpense);
-        assertThat(removeUrl(employeeSession(travelExpense.getReport().getEmployee().getEmail()), "/travelExpenses/" + travelExpense.getId()), isForbidden());
+        assertThat(remove(1L), isForbidden());
     }
 
     @Test
     public void deleteSubmittedNotAllowed() throws Exception {
-        TravelExpense travelExpense = dataOnDemand.getRandomObject();
-        travelExpense.getReport().setStatus(Report.Status.SUBMITTED);
-        repository.save(travelExpense);
-        assertThat(removeUrl(employeeSession(travelExpense.getReport().getEmployee().getEmail()), "/travelExpenses/" + travelExpense.getId()), isForbidden());
+        assertThat(remove(2L), isForbidden());
     }
 
     @Test
     @Ignore
     public void changeReportNotAllowed() throws Exception {
-        assertThat(updateLink(supervisorSession(), "report", "/travelExpenseReports/0"), isForbidden());
+        assertThat(updateLink(0L, "report", "/travelExpenseReports/0"), isForbidden());
     }
 
-//    @Test
-//    public void accessTypes() throws Exception {
-//        mockMvc.perform(
-//                get("/travelExpenses/types")
-//                    .session(employeeSession())
-//        )
-//                .andExpect(status().isOk());
-//    }
-
-    @Override
-    protected String getJsonRepresentation(TravelExpense travelExpense) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        jg.writeStartObject()
-          .write("cost", travelExpense.getCost())
-          .write("vat", travelExpense.getVat())
-          .write("fromDate", sdf.format(travelExpense.getFromDate()))
-          .write("toDate", sdf.format(travelExpense.getToDate()))
-          .write("submissionDate", sdf2.format(travelExpense.getSubmissionDate()))
-          .write("type", travelExpense.getType().toString())
-          .write("report", "/travelExpenseReports/" + travelExpense.getReport().getId());
-
-        if(travelExpense.getComment() != null) {
-            jg.write("comment", travelExpense.getComment());
-        }
-
-        if (travelExpense.getId() != null) {
-            jg.write("id", travelExpense.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
+    @Test
+    public void accessTypes() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/travelExpenses/types", String.class);
+        assertThat(response, isAccessible());
     }
+
 }
