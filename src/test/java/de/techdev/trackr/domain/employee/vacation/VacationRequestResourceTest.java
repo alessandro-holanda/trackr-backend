@@ -1,130 +1,102 @@
 package de.techdev.trackr.domain.employee.vacation;
 
-import de.techdev.trackr.core.security.AuthorityMocks;
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.employee.EmployeeDataOnDemand;
+import de.techdev.test.OAuthToken;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.core.context.SecurityContextHolder;
-
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.function.Function;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.echocat.jomon.testing.BaseMatchers.isNotNull;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class VacationRequestResourceTest extends AbstractDomainResourceTest2<VacationRequest> {
+@Sql("resourceTest.sql")
+@Sql("tableUuidMapping.sql")
+@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthToken
+public class VacationRequestResourceTest extends AbstractDomainResourceSecurityTest {
 
-    @Autowired
-    private EmployeeDataOnDemand employeeDataOnDemand;
-
-    private Function<VacationRequest, MockHttpSession> sameEmployeeSessionProvider;
-    private Function<VacationRequest, MockHttpSession> sameSupervisorSessionProvider;
-    private Function<VacationRequest, MockHttpSession> otherEmployeeSessionProvider;
-    private Function<VacationRequest, MockHttpSession> otherSupervisorSessionProvider;
+    private VacationRequestJsonGenerator jsonGenerator = new VacationRequestJsonGenerator();
 
     @Override
     protected String getResourceName() {
         return "vacationRequests";
     }
 
-    public VacationRequestResourceTest() {
-        sameEmployeeSessionProvider = vacationRequest -> employeeSession(vacationRequest.getEmployee().getEmail());
-        otherEmployeeSessionProvider = vacationRequest -> employeeSession(vacationRequest.getEmployee().getEmail() + 1);
-        sameSupervisorSessionProvider = vacationRequest -> supervisorSession(vacationRequest.getEmployee().getEmail());
-        otherSupervisorSessionProvider = vacationRequest -> supervisorSession(vacationRequest.getEmployee().getEmail() + 1);
-    }
-
     @Test
     public void rootNotExported() throws Exception {
-        assertThat(root(employeeSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
     public void oneAllowedForEmployee() throws Exception {
-        assertThat(one(sameEmployeeSessionProvider), isAccessible());
+        assertThat(one(0L), isAccessible());
     }
 
     @Test
+    @OAuthToken(username = "someone.else@techdev.de")
     public void oneForbiddenForOther() throws Exception {
-        assertThat(one(otherEmployeeSessionProvider), isForbidden());
+        assertThat(one(0L), isForbidden());
     }
 
-//    @Test
-//    public void findByEmployeeOrderByStartDateAscAllowedForEmployee() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/vacationRequests/search/findByEmployeeOrderByStartDateAsc")
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//                        .param("employee", vacationRequest.getEmployee().getId().toString())
-//        )
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.vacationRequests[0]", isNotNull()));
-//    }
+    @Test
+    public void findByEmployeeOrderByStartDateAscAllowedForEmployee() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByEmployeeOrderByStartDateAsc?employee=0", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByEmployeeOrderByStartDateAscAllowedForSupervisor() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/vacationRequests/search/findByEmployeeOrderByStartDateAsc")
-//                        .session(supervisorSession())
-//                        .param("employee", vacationRequest.getEmployee().getId().toString())
-//        )
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.vacationRequests[0]", isNotNull()));
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    public void findByEmployeeOrderByStartDateAscAllowedForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByEmployeeOrderByStartDateAsc?employee=0", String.class);
+        assertThat(response, isAccessible());
+    }
 
     /**
      * Access is forbidden, but currently spring-data-rest will throw a 400 because the employee cannot be unmarshalled from the id.
-     *
-     * @throws Exception
      */
-//    @Test
-//    @Ignore
-//    public void findByEmployeeOrderByStartDateAscForbiddenForOther() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/vacationRequests/search/findByEmployeeOrderByStartDateAsc")
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail() + 1))
-//                        .param("employee", vacationRequest.getEmployee().getId().toString())
-//        )
-//               .andExpect(status().isForbidden());
-//    }
-
     @Test
-    public void createAllowedForEmployee() throws Exception {
-        assertThat(create(sameEmployeeSessionProvider), isCreated());
+    @Ignore
+    @OAuthToken(username = "someone.else@techdev.de")
+    public void findByEmployeeOrderByStartDateAscForbiddenForOther() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByEmployeeOrderByStartDateAsc?employee=0", String.class);
+        assertThat(response, isForbidden());
     }
 
     @Test
+    public void createAllowedForEmployee() throws Exception {
+        String json = jsonGenerator.start().withEmployeeId(0L).build();
+        assertThat(create(json), isCreated());
+    }
+
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void createForbiddenForSupervisorIfNotOwner() throws Exception {
-        assertThat(create(otherSupervisorSessionProvider), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).build();
+        assertThat(create(json), isForbidden());
     }
 
     @Test
     public void updateForbiddenForEmployee() throws Exception {
-        assertThat(update(sameEmployeeSessionProvider), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateAllowedForSupervisor() throws Exception {
-        assertThat(update(supervisorSession()), isUpdated());
+        String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void updateSelfNotAllowedForSupervisor() throws Exception {
-        assertThat(update((vr) -> supervisorSession(vr.getEmployee().getEmail())), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     /**
@@ -132,228 +104,127 @@ public class VacationRequestResourceTest extends AbstractDomainResourceTest2<Vac
      *
      * @throws Exception
      */
-//    @Test
-//    @Ignore
-//    public void updateForbiddenForOther() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                put("/vacationRequests/" + vacationRequest.getId())
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail() + 1))
-//                        .content(getJsonRepresentation(vacationRequest))
-//        )
-//               .andExpect(status().isForbidden());
-//    }
-
-//    @Test
-//    public void deleteAllowedForEmployee() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.PENDING);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                delete("/vacationRequests/" + vacationRequest.getId())
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//               .andExpect(status().isNoContent());
-//    }
-
-//    @Test
-//    public void deleteApprovedNotAllowedForEmployee() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.APPROVED);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                delete("/vacationRequests/" + vacationRequest.getId())
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//               .andExpect(status().isForbidden());
-//    }
-
-//    @Test
-//    public void deleteRejectedNotAllowedForEmployee() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.REJECTED);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                delete("/vacationRequests/" + vacationRequest.getId())
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//               .andExpect(status().isForbidden());
-//    }
+    @Test
+    @Ignore
+    @OAuthToken(username = "someone.else@techdev.de")
+    public void updateForbiddenForOther() throws Exception {
+        String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
+    }
 
     @Test
+    public void deleteAllowedForEmployee() throws Exception {
+        assertThat(remove(0L), isNoContent());
+    }
+
+    @Test
+    @OAuthToken("employee2@techdev.de")
+    public void deleteApprovedNotAllowedForEmployee() throws Exception {
+        assertThat(remove(1L), isForbidden());
+    }
+
+    @Test
+    @OAuthToken("employee2@techdev.de")
+    public void deleteRejectedNotAllowedForEmployee() throws Exception {
+        assertThat(remove(2L), isForbidden());
+    }
+
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void deleteAllowedForSupervisor() throws Exception {
-        assertThat(remove(otherSupervisorSessionProvider), isNoContent());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void deleteForbiddenForOwningSupervisor() throws Exception {
-        assertThat(remove(sameSupervisorSessionProvider), isForbidden());
+        assertThat(remove(1L), isForbidden());
     }
 
     @Test
+    @OAuthToken(username = "someone.else@techdev.de")
     public void deleteForbiddenForOther() throws Exception {
-        assertThat(remove(otherEmployeeSessionProvider), isForbidden());
+        assertThat(remove(0L), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void updateEmployeeIsForbidden() throws Exception {
-        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-        assertThat(updateLink(adminSession(), "employee", "/employees/" + vacationRequest.getEmployee().getId()), isForbidden());
+        assertThat(updateLink(0L, "employee", "/employees/0"), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void updateApproverIsForbidden() throws Exception {
-        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-        assertThat(updateLink(adminSession(), "approver", "/employees/" + vacationRequest.getEmployee().getId()), isForbidden());
+        assertThat(updateLink(0L, "approver", "/employees/0"), isForbidden());
     }
 
     @Test
     public void deleteEmployeeIsForbidden() throws Exception {
-        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(employeeSession(vacationRequest.getEmployee().getEmail()), "/vacationRequests/" + vacationRequest.getId() + "/employee"), isForbidden());
+        assertThat(removeUrl("/vacationRequests/0/employee"), isForbidden());
     }
 
     @Test
-    public void deleteApproverIsForbbiden() throws Exception {
-        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-        vacationRequest.setApprover(vacationRequest.getEmployee());
-        repository.save(vacationRequest);
-        assertThat(removeUrl(employeeSession(vacationRequest.getEmployee().getEmail()), "/vacationRequests/" + vacationRequest.getId() + "/approver"), isForbidden());
+    public void deleteApproverIsForbidden() throws Exception {
+        assertThat(removeUrl("/vacationRequests/1/approver"), isForbidden());
     }
 
-//    @Test
-//    public void getApprover() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setApprover(employeeDataOnDemand.getRandomObject());
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                get("/vacationRequests/" + vacationRequest.getId() + "/approver")
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//               .andExpect(status().isOk());
-//    }
+    @Test
+    public void getApprover() throws Exception {
+        assertThat(oneUrl("/vacationRequests/1/approver"), isAccessible());
+    }
 
-//    @Test
-//    public void findByStatusOrderBySubmissionTimeAscForbiddenForEmployee() throws Exception {
-//        mockMvc.perform(
-//                get("/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc")
-//                        .session(employeeSession())
-//                        .param("approved", VacationRequest.VacationRequestStatus.APPROVED.toString())
-//        )
-//               .andExpect(status().isForbidden());
-//    }
+    @Test
+    public void findByStatusOrderBySubmissionTimeAscForbiddenForEmployee() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc?approved=APPROVED", String.class);
+        assertThat(response, isForbidden());
+    }
 
-//    @Test
-//    public void findByStatusOrderBySubmissionTimeAscAllowedForSupervisor() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc")
-//                        .session(supervisorSession())
-//                        .param("status", vacationRequest.getStatus().toString())
-//        )
-//               .andExpect(status().isOk())
-//               .andExpect(jsonPath("_embedded.vacationRequests[0]", isNotNull()));
-//    }
+    @Test
+    @OAuthToken("ROLE_SUPERVISOR")
+    public void findByStatusOrderBySubmissionTimeAscAllowedForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc?approved=APPROVED", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void approveNotAllowedForSupervisorOnOwnVacationRequest() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.PENDING);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                put("/vacationRequests/" + vacationRequest.getId() + "/approve")
-//                        .session(supervisorSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//                .andExpect(status().isForbidden());
-//
-//        SecurityContextHolder.getContext().setAuthentication(AuthorityMocks.supervisorAuthentication());
-//        VacationRequest one = repository.findOne(vacationRequest.getId());
-//        assertThat(one.getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
-//    }
+    @Test
+    @OAuthToken("ROLE_SUPERVISOR")
+    public void approveNotAllowedForSupervisorOnOwnVacationRequest() throws Exception {
+        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
+        assertThat(response, isForbidden());
+        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
+        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
+    }
 
-//    @Test
-//    public void approveNotAllowedForEmployees() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.PENDING);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                put("/vacationRequests/" + vacationRequest.getId() + "/approve")
-//                        .session(employeeSession(vacationRequest.getEmployee().getEmail()))
-//        )
-//                .andExpect(status().isForbidden());
-//
-//        SecurityContextHolder.getContext().setAuthentication(AuthorityMocks.supervisorAuthentication());
-//        VacationRequest one = repository.findOne(vacationRequest.getId());
-//        assertThat(one.getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
-//    }
+    @Test
+    public void approveNotAllowedForEmployees() throws Exception {
+        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
+        assertThat(response, isForbidden());
+        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
+        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
+    }
 
-//    @Test
-//    public void approveAllowedForOtherSupervisor() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        vacationRequest.setStatus(VacationRequest.VacationRequestStatus.PENDING);
-//        repository.save(vacationRequest);
-//        mockMvc.perform(
-//                put("/vacationRequests/" + vacationRequest.getId() + "/approve")
-//                        .session(supervisorSession(vacationRequest.getEmployee().getEmail() + 1))
-//        )
-//                .andExpect(status().isOk());
-//
-//        SecurityContextHolder.getContext().setAuthentication(AuthorityMocks.supervisorAuthentication());
-//        VacationRequest one = repository.findOne(vacationRequest.getId());
-//        assertThat(one.getStatus(), is(VacationRequest.VacationRequestStatus.APPROVED));
-//    }
+    @Test
+    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    public void approveAllowedForOtherSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
+        assertThat(response, isAccessible());
+        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
+        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.APPROVED));
+    }
 
-//    @Test
-//    public void daysPerEmployeeBetweenAccessibleForAdmin() throws Exception {
-//        VacationRequest vacationRequest = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/vacationRequests/daysPerEmployeeBetween")
-//                .session(adminSession())
-//                .param("start", String.valueOf(vacationRequest.getStartDate().getTime()))
-//                .param("end", String.valueOf(vacationRequest.getEndDate().getTime()))
-//        )
-//                .andExpect(status().isOk());
-//    }
+    @Test
+    @OAuthToken("ROLE_ADMIN")
+    public void daysPerEmployeeBetweenAccessibleForAdmin() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/daysPerEmployeeBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void daysPerEmployeeBetweenForbiddenForSupervisor() throws Exception {
-//        mockMvc.perform(
-//                get("/vacationRequests/daysPerEmployeeBetween")
-//                        .session(supervisorSession())
-//                        .param("start", String.valueOf(new Date().getTime()))
-//                        .param("end", String.valueOf(new Date().getTime()))
-//        )
-//                .andExpect(status().isForbidden());
-//    }
-
-    @Override
-    protected String getJsonRepresentation(VacationRequest vacationRequest) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        StringWriter writer = new StringWriter();
-        JsonGenerator jsonGenerator = jsonGeneratorFactory.createGenerator(writer);
-        JsonGenerator jg = jsonGenerator
-                .writeStartObject()
-                .write("startDate", sdf.format(vacationRequest.getStartDate()))
-                .write("endDate", sdf.format(vacationRequest.getEndDate()))
-                .write("status", vacationRequest.getStatus().toString())
-                .write("employee", "/api/employees/" + vacationRequest.getEmployee().getId());
-
-        if (vacationRequest.getId() != null) {
-            jg.write("id", vacationRequest.getId());
-        }
-        if (vacationRequest.getApprovalDate() != null) {
-            jg.write("approvalDate", sdf2.format(vacationRequest.getApprovalDate()));
-        }
-        if (vacationRequest.getNumberOfDays() != null) {
-            jg.write("numberOfDays", vacationRequest.getNumberOfDays());
-        }
-        if (vacationRequest.getSubmissionTime() != null) {
-            jg.write("submissionTime", sdf2.format(vacationRequest.getSubmissionTime()));
-        }
-
-        jg.writeEnd().close();
-        return writer.toString();
+    @Test
+    @OAuthToken("ROLE_SUPERVISOR")
+    public void daysPerEmployeeBetweenForbiddenForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/daysPerEmployeeBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isForbidden());
     }
 
 }
