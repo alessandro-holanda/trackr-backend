@@ -1,30 +1,21 @@
 package de.techdev.trackr.domain.project.billtimes;
 
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.project.billtimes.BillableTime;
+import de.techdev.test.OAuthToken;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.mock.web.MockHttpSession;
-
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.function.Function;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class BillableTimeResourceTest extends AbstractDomainResourceTest2<BillableTime> {
+@Sql("resourceTest.sql")
+@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthToken
+public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest {
 
-    private final Function<BillableTime, MockHttpSession> sameEmployeeSessionProvider;
-
-    public BillableTimeResourceTest() {
-        sameEmployeeSessionProvider = (BillableTime bt) -> employeeSession(bt.getEmployee().getEmail());
-    }
+    private BillableTimesJsonGenerator jsonGenerator = new BillableTimesJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -33,42 +24,49 @@ public class BillableTimeResourceTest extends AbstractDomainResourceTest2<Billab
 
     @Test
     public void rootNotExported() throws Exception {
-        assertThat(root(employeeSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void oneAllowedForSupervisor() throws Exception {
-        assertThat(one(supervisorSession()), isAccessible());
+        assertThat(one(0L), isAccessible());
     }
 
     @Test
     public void oneForbiddenForEmployee() throws Exception {
-        assertThat(one(employeeSession()), isForbidden());
+        assertThat(one(0L), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void createAllowedForSupervisor() throws Exception {
-        assertThat(create(supervisorSession()), isCreated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
     public void createForbiddenForEmployee() throws Exception {
-        assertThat(create(sameEmployeeSessionProvider), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).build();
+        assertThat(create(json), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void deleteAllowedForSupervisor() throws Exception {
-        assertThat(remove(supervisorSession()), isNoContent());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
     public void deleteForbiddenForEmployee() throws Exception {
-        assertThat(remove(employeeSession()), isForbidden());
+        assertThat(remove(0L), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void updateAllowedForSupervisor() throws Exception {
-        assertThat(update(supervisorSession()), isUpdated());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(b -> b.setId(0L)).build();
+        assertThat(update(0L, json), isUpdated());
     }
 
     /**
@@ -77,77 +75,55 @@ public class BillableTimeResourceTest extends AbstractDomainResourceTest2<Billab
     @Test
     @Ignore
     public void updateForbiddenForEmployee() throws Exception {
-        assertThat(update(employeeSession()), isForbidden());
+        String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(b -> b.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void deleteEmployeeForbidden() throws Exception {
-        BillableTime billableTime = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(adminSession(), "/billableTimes/" + billableTime.getId() + "/employee"), isForbidden());
+        assertThat(removeUrl("/billableTimes/0/employee"), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_ADMIN")
     public void deleteProjectForbidden() throws Exception {
-        BillableTime billableTime = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(adminSession(), "/billableTimes/" + billableTime.getId() + "/project"), isForbidden());
+        assertThat(removeUrl("/billableTimes/0/project"), isForbidden());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void updateEmployeeAllowedForSupervisor() throws Exception {
-        assertThat(updateLink(supervisorSession(), "employee", "/employees/0"), isNoContent());
+        assertThat(updateLink(0L, "employee", "/employees/0"), isNoContent());
     }
 
     @Test
+    @OAuthToken("ROLE_SUPERVISOR")
     public void updateProjectAllowedForSupervisor() throws Exception {
-        assertThat(updateLink(supervisorSession(), "project", "/projects/0"), isNoContent());
+        assertThat(updateLink(0L, "project", "/projects/0"), isNoContent());
     }
 
     @Test
     public void updateEmployeeForbiddenForEmployee() throws Exception {
-        assertThat(updateLink(sameEmployeeSessionProvider, "employee", "/employees/0"), isForbidden());
+        assertThat(updateLink(0L, "employee", "/employees/0"), isForbidden());
     }
 
     @Test
     public void updateProjectForbiddenForEmployee() throws Exception {
-        assertThat(updateLink(sameEmployeeSessionProvider, "project", "/projects/0"), isForbidden());
+        assertThat(updateLink(0L, "project", "/projects/0"), isForbidden());
     }
 
-//    @Test
-//    public void findByDateBetweenAllowedForAdmin() throws Exception {
-//        mockMvc.perform(
-//                get("/billableTimes/search/findByDateBetween")
-//                        .session(adminSession())
-//                        .param("start", String.valueOf(new Date().getTime()))
-//                        .param("end", String.valueOf(new Date().getTime()))
-//        )
-//                .andExpect(status().isOk());
-//    }
+    @Test
+    @OAuthToken("ROLE_ADMIN")
+    public void findByDateBetweenAllowedForAdmin() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/billableTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isAccessible());
+    }
 
-//    @Test
-//    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
-//        mockMvc.perform(
-//                get("/billableTimes/search/findByDateBetween")
-//                        .session(supervisorSession())
-//                        .param("start", String.valueOf(new Date().getTime()))
-//                        .param("end", String.valueOf(new Date().getTime()))
-//        )
-//                .andExpect(status().isForbidden());
-//    }
-
-    @Override
-    protected String getJsonRepresentation(BillableTime billableTime) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        jg.writeStartObject()
-                .write("date", sdf.format(billableTime.getDate()))
-                .write("minutes", billableTime.getMinutes())
-                .write("employee", "/employees/" + billableTime.getEmployee().getId())
-                .write("project", "/projects/" + billableTime.getProject().getId());
-        if (billableTime.getId() != null) {
-            jg.write("id", billableTime.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
+    @Test
+    @OAuthToken("ROLE_SUPERVISOR")
+    public void findByDateBetweenForbiddenForSupervisor() throws Exception {
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/billableTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
+        assertThat(response, isForbidden());
     }
 }
