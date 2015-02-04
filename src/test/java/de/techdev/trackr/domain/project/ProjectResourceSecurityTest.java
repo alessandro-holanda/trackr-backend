@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.project;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
@@ -11,8 +11,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken("ROLE_ADMIN")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest("ROLE_ADMIN")
 public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private ProjectJsonGenerator jsonGenerator = new ProjectJsonGenerator();
@@ -23,13 +23,13 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void rootAccessible() throws Exception {
         assertThat(root(), isAccessible());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void one() throws Exception {
         assertThat(one(0L), isAccessible());
     }
@@ -52,21 +52,21 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void createForbiddenForSupervisor() throws Exception {
         String json = jsonGenerator.start().build();
         assertThat(create(json), isForbidden());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR")
+    @OAuthRequest(value = "ROLE_SUPERVISOR")
     public void updateForbiddenForSupervisor() throws Exception {
         String json = jsonGenerator.start().apply(p -> p.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteForbiddenForSupervisor() throws Exception {
         assertThat(remove(0L), isForbidden());
     }
@@ -77,7 +77,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void setCompanyForbiddenForSupervisor() throws Exception {
         assertThat(updateLink(0L, "company", "/companies/0"), isForbidden());
     }
@@ -88,7 +88,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void setDebitorForbiddenForSupervisor() throws Exception {
         assertThat(updateLink(0L, "debitor", "/companies/0"), isForbidden());
     }
@@ -99,7 +99,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void setWorktimesForbiddenForSupervisor() throws Exception {
         assertThat(updateLink(0L, "workTimes", "/workTimes/0"), isForbidden());
     }
@@ -110,7 +110,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteCompanyForbiddenForSupervisor() throws Exception {
         assertThat(removeUrl("/projects/0/company"), isForbidden());
     }
@@ -121,7 +121,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteDebitorForbiddenForSupervisor() throws Exception {
         assertThat(removeUrl("/projects/0/debitor"), isForbidden());
     }
@@ -132,7 +132,7 @@ public class ProjectResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteWorktimesForbiddenForSupervisor() throws Exception {
         assertThat(removeUrl("/projects/0/workTimes/0"), isForbidden());
     }

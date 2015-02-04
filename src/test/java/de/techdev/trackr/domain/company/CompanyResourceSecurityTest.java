@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.company;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.http.ResponseEntity;
@@ -10,8 +10,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken("ROLE_ADMIN")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest("ROLE_ADMIN")
 public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private CompanyJsonGenerator jsonGenerator = new CompanyJsonGenerator();
@@ -22,26 +22,26 @@ public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void rootAccessible() throws Exception {
         assertThat(root(), isAccessible());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void one() throws Exception {
         assertThat(one(0L), isAccessible());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void findByNameLikeOrderByNameAsc() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/companies/search/findByNameLikeIgnoreCaseOrderByNameAsc?name=%webshop%", String.class);
         assertThat(response, isAccessible());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void findByCompanyId() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/companies/search/findByCompanyId?companyId=1000", String.class);
         assertThat(response, isAccessible());
@@ -65,21 +65,21 @@ public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void postForbiddenForSupervisor() throws Exception {
         String json = jsonGenerator.start().withAddressId(0L).build();
         assertThat(create(json), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void putForbiddenForSupervisor() throws Exception {
         String json = jsonGenerator.start().apply(c -> c.setId(0L)).withAddressId(0L).build();
         assertThat(update(0L, json), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void patchForbiddenForSupervisor() throws Exception {
         assertThat(updateViaPatch(0L, "{\"name\": \"test\"}"), isForbidden());
     }
@@ -95,25 +95,25 @@ public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityT
 //    }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void addContactPersonSupervisor() throws Exception {
         assertThat(updateLink(0L, "contactPersons", "/contactPersons/0"), isNoContent());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void addContactForbiddenForEmployee() throws Exception {
         assertThat(updateLink(0L, "contactPersons", "/contactPersons/0"), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteContactAllowedForSupervisor() throws Exception {
         assertThat(removeUrl("/companies/0/contactPersons/0"), isNoContent());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void deleteContactNotAllowedForEmployee() throws Exception {
         assertThat(removeUrl("/companies/0/contactPersons/0"), isForbidden());
     }
@@ -124,13 +124,13 @@ public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteForbiddenForSupervisor() throws Exception {
         assertThat(remove(0L), isForbidden());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void getAddress() throws Exception {
         assertThat(oneUrl("/companies/0/address"), isAccessible());
     }

@@ -1,23 +1,19 @@
 package de.techdev.trackr.domain.translations;
 
-import de.techdev.trackr.core.web.MockMvcTest;
+import de.techdev.test.OAuthRequest;
+import de.techdev.trackr.core.web.MockMvcTest2;
 import org.junit.Test;
+import org.springframework.http.ResponseEntity;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isAccessible;
+import static org.junit.Assert.assertThat;
 
-/**
- * @author Moritz Schulze
- */
-public class TranslationsResourceTest extends MockMvcTest {
+@OAuthRequest
+public class TranslationsResourceTest extends MockMvcTest2 {
 
     @Test
     public void testGetTranslationsIsAccessible() throws Exception {
-        mockMvc.perform(
-                get("/translations")
-                        .session(employeeSession())
-                        .param("locale", "en")
-        )
-                .andExpect(status().isOk());
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/translations?locale=de", String.class);
+        assertThat(response, isAccessible());
     }
 }

@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.employee;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
@@ -13,8 +13,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken("ROLE_SUPERVISOR")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest("ROLE_SUPERVISOR")
 public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     @Override
@@ -23,7 +23,7 @@ public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurity
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void rootNotAllowedForEmployees() throws Exception {
         assertThat(root(), isForbidden());
     }
@@ -39,13 +39,13 @@ public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurity
     }
 
     @Test
-    @OAuthToken(username = "employee@techdev.de")
+    @OAuthRequest(username = "employee@techdev.de")
     public void oneIsAllowedForSelf() throws Exception {
         assertThat(one(0L), isAccessible());
     }
 
     @Test
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void oneIsForbiddenForOtherEmployee() throws Exception {
         assertThat(one(0L), isForbidden());
     }
@@ -66,7 +66,7 @@ public class EmployeeResourceSecurityTest extends AbstractDomainResourceSecurity
 //    }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void deleteAllowedForAdmins() throws Exception {
         assertThat(remove(0L), isNoContent());
     }

@@ -9,12 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import static org.echocat.jomon.testing.BaseMatchers.*;
+import static org.echocat.jomon.testing.BaseMatchers.isGreaterThanOrEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * @author Moritz Schulze
- */
 public class WorkTimeRepositoryTest extends TransactionalIntegrationTest {
 
     @Autowired
@@ -26,26 +23,6 @@ public class WorkTimeRepositoryTest extends TransactionalIntegrationTest {
     @Before
     public void setUp() throws Exception {
         workTimeDataOnDemand.init();
-    }
-
-    @Test
-    public void one() throws Exception {
-        WorkTime workTime = workTimeDataOnDemand.getRandomObject();
-        WorkTime one = workTimeRepository.findOne(workTime.getId());
-        assertThat(one, isNotNull());
-    }
-
-    @Test
-    public void all() throws Exception {
-        List<WorkTime> all = workTimeRepository.findAll();
-        assertThat(all, isNotEmpty());
-    }
-
-    @Test
-    public void findByEmployeeAndDate() throws Exception {
-        WorkTime workTime = workTimeDataOnDemand.getRandomObject();
-        List<WorkTime> workTimes = workTimeRepository.findByEmployeeAndDateOrderByStartTimeAsc(workTime.getEmployee(), workTime.getDate());
-        assertThat(workTimes, isNotEmpty());
     }
 
     /**

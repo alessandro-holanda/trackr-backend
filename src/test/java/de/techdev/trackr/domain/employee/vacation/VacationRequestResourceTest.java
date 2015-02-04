@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.employee.vacation;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,8 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
 @Sql("tableUuidMapping.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
 public class VacationRequestResourceTest extends AbstractDomainResourceSecurityTest {
 
     private VacationRequestJsonGenerator jsonGenerator = new VacationRequestJsonGenerator();
@@ -37,7 +37,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void oneForbiddenForOther() throws Exception {
         assertThat(one(0L), isForbidden());
     }
@@ -49,7 +49,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void findByEmployeeOrderByStartDateAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByEmployeeOrderByStartDateAsc?employee=0", String.class);
         assertThat(response, isAccessible());
@@ -60,7 +60,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
      */
     @Test
     @Ignore
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void findByEmployeeOrderByStartDateAscForbiddenForOther() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByEmployeeOrderByStartDateAsc?employee=0", String.class);
         assertThat(response, isForbidden());
@@ -73,7 +73,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void createForbiddenForSupervisorIfNotOwner() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).build();
         assertThat(create(json), isForbidden());
@@ -86,14 +86,14 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
         assertThat(update(0L, json), isUpdated());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void updateSelfNotAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
@@ -106,7 +106,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
      */
     @Test
     @Ignore
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void updateForbiddenForOther() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).apply(v -> v.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
@@ -118,43 +118,43 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("employee2@techdev.de")
+    @OAuthRequest("employee2@techdev.de")
     public void deleteApprovedNotAllowedForEmployee() throws Exception {
         assertThat(remove(1L), isForbidden());
     }
 
     @Test
-    @OAuthToken("employee2@techdev.de")
+    @OAuthRequest("employee2@techdev.de")
     public void deleteRejectedNotAllowedForEmployee() throws Exception {
         assertThat(remove(2L), isForbidden());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void deleteAllowedForSupervisor() throws Exception {
         assertThat(remove(0L), isNoContent());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteForbiddenForOwningSupervisor() throws Exception {
         assertThat(remove(1L), isForbidden());
     }
 
     @Test
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void deleteForbiddenForOther() throws Exception {
         assertThat(remove(0L), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void updateEmployeeIsForbidden() throws Exception {
         assertThat(updateLink(0L, "employee", "/employees/0"), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void updateApproverIsForbidden() throws Exception {
         assertThat(updateLink(0L, "approver", "/employees/0"), isForbidden());
     }
@@ -181,14 +181,14 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void findByStatusOrderBySubmissionTimeAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc?approved=APPROVED", String.class);
         assertThat(response, isAccessible());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void approveNotAllowedForSupervisorOnOwnVacationRequest() throws Exception {
         ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
         assertThat(response, isForbidden());
@@ -205,7 +205,7 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void approveAllowedForOtherSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
         assertThat(response, isAccessible());
@@ -214,14 +214,14 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void daysPerEmployeeBetweenAccessibleForAdmin() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/daysPerEmployeeBetween?start=2014-01-01&end=2014-01-31", String.class);
         assertThat(response, isAccessible());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void daysPerEmployeeBetweenForbiddenForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/daysPerEmployeeBetween?start=2014-01-01&end=2014-01-31", String.class);
         assertThat(response, isForbidden());

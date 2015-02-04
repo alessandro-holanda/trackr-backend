@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.company;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.http.HttpEntity;
@@ -14,8 +14,8 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("contactPerson/resourceTest.sql")
-@Sql(value = "contactPerson/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken("ROLE_SUPERVISOR")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest("ROLE_SUPERVISOR")
 public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private ContactPersonJsonGenerator jsonGenerator = new ContactPersonJsonGenerator();
@@ -26,13 +26,13 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void rootAccessible() throws Exception {
         assertThat(root(), isAccessible());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void one() throws Exception {
         assertThat(one(0L), isAccessible());
     }
@@ -50,7 +50,7 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void putNotAllowedForEmployee() throws Exception {
         String json = jsonGenerator.withCompanyId(0L).start().apply(c -> c.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
@@ -62,13 +62,13 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void patchNotAllowedForEmployee() throws Exception {
         assertThat(updateViaPatch(0L, "{\"firstName\": \"Test\"}"), isForbidden());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void postNotAllowedForEmployee() throws Exception {
         String json = jsonGenerator.withCompanyId(0L).start().build();
         assertThat(create(json), isForbidden());
@@ -89,13 +89,13 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void deleteForbiddenForEmployee() throws Exception {
         assertThat(remove(0L), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_EMPLOYEE")
+    @OAuthRequest("ROLE_EMPLOYEE")
     public void updateCompanyForbiddenForEmployee() throws Exception {
         LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
         headers.put("Content-Type", asList("text/uri-list"));

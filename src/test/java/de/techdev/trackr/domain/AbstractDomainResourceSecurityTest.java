@@ -11,6 +11,11 @@ import static java.util.Arrays.asList;
 
 public abstract class AbstractDomainResourceSecurityTest extends MockMvcTest2 {
 
+    /**
+     * An SQL file that empties all tables in the trackr database.
+     */
+    public static final String EMPTY_DATABASE_FILE = "/de/techdev/trackr/domain/emptyDatabase.sql";
+
     protected abstract String getResourceName();
 
     private HttpEntity<String> getJsonEntity(String content) {

@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.company;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
@@ -9,8 +9,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("address/resourceTest.sql")
-@Sql(value = "address/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken("ROLE_ADMIN")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest("ROLE_ADMIN")
 public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private AddressJsonGenerator jsonGenerator = new AddressJsonGenerator();
@@ -21,13 +21,13 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void findAllNotExported() throws Exception {
         assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
-    @OAuthToken
+    @OAuthRequest
     public void one() throws Exception {
         assertThat(one(0L), isAccessible());
     }
@@ -50,21 +50,21 @@ public class AddressResourceSecurityTest extends AbstractDomainResourceSecurityT
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void createNotAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().build();
         assertThat(create(json), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void putForbiddenForSupervisor() throws Exception {
         String json = jsonGenerator.start().apply(c -> c.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void patchForbiddenForSupervisor() throws Exception {
         assertThat(updateViaPatch(0L, "{\"street\": \"test\"}"), isForbidden());
     }

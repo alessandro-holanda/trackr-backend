@@ -25,7 +25,7 @@ import javax.json.stream.JsonGeneratorFactory;
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebIntegrationTest(randomPort = true)
 @SpringApplicationConfiguration(classes = Trackr.class)
-@ActiveProfiles({"in-memory-database", "test-oauth", "granular-security", "integration-test"})
+@ActiveProfiles({"in-memory-database", "test-oauth", "granular-security"})
 @TestExecutionListeners(value = OAuthTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class MockMvcTest2 {
 

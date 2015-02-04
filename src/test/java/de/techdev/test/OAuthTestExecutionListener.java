@@ -24,7 +24,7 @@ import static org.echocat.jomon.runtime.CollectionUtils.asSet;
 
 /**
  * Test execution listener that adds an OAuth token into the store before each method. The value of the token can be set with the
- * {@link de.techdev.test.OAuthToken} annotation on each test method.
+ * {@link OAuthRequest} annotation on each test method.
  */
 @Slf4j
 public class OAuthTestExecutionListener extends AbstractTestExecutionListener {
@@ -41,10 +41,10 @@ public class OAuthTestExecutionListener extends AbstractTestExecutionListener {
 
     @Override
     public void beforeTestMethod(TestContext testContext) throws Exception {
-        OAuthToken annotation = AnnotationUtils.getAnnotation(testContext.getTestMethod(), OAuthToken.class);
+        OAuthRequest annotation = AnnotationUtils.getAnnotation(testContext.getTestMethod(), OAuthRequest.class);
 
         if (annotation == null) {
-            annotation = AnnotationUtils.getAnnotation(testContext.getTestClass(), OAuthToken.class);
+            annotation = AnnotationUtils.getAnnotation(testContext.getTestClass(), OAuthRequest.class);
         }
 
         if(annotation == null) {
@@ -54,12 +54,12 @@ public class OAuthTestExecutionListener extends AbstractTestExecutionListener {
         }
     }
 
-    private void insertOauthTokenIntoStore(TestContext testContext, @Nonnull OAuthToken token) {
+    private void insertOauthTokenIntoStore(TestContext testContext, @Nonnull OAuthRequest token) {
         TokenStore tokenStore = testContext.getApplicationContext().getBean(TokenStore.class);
         tokenStore.storeAccessToken(accessToken, new OAuth2Authentication(clientAuthentication, getAuthenticationFromAnnotation(token)));
     }
 
-    private Authentication getAuthenticationFromAnnotation(OAuthToken token) {
+    private Authentication getAuthenticationFromAnnotation(OAuthRequest token) {
         return new Authentication() {
             @Override
             public Collection<? extends GrantedAuthority> getAuthorities() {

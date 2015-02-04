@@ -1,21 +1,19 @@
 package de.techdev.trackr.domain.common;
 
-import de.techdev.trackr.core.web.MockMvcTest;
+import de.techdev.test.OAuthRequest;
+import de.techdev.trackr.core.web.MockMvcTest2;
 import org.junit.Test;
+import org.springframework.http.ResponseEntity;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isAccessible;
+import static org.junit.Assert.assertThat;
 
-/**
- * @author Moritz Schulze
- */
-public class FederalStateControllerIntegrationTest extends MockMvcTest {
+@OAuthRequest
+public class FederalStateControllerIntegrationTest extends MockMvcTest2 {
 
     @Test
     public void getAllFederalStates() throws Exception {
-        mockMvc.perform(
-                get("/federalStates")
-                        .session(employeeSession()))
-               .andExpect(status().isOk());
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/federalStates", String.class);
+        assertThat(response, isAccessible());
     }
 }

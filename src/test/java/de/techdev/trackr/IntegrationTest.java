@@ -10,6 +10,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Trackr.class)
-@ActiveProfiles(value = {"dev", "in-memory-database"})
+@ActiveProfiles(value = {"in-memory-database"})
 public abstract class IntegrationTest {
 }

@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.employee.expenses;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,8 +11,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
 public class TravelExpenseResourceTest extends AbstractDomainResourceSecurityTest {
 
     private TravelExpenseJsonGenerator jsonGenerator = new TravelExpenseJsonGenerator();
@@ -23,13 +23,13 @@ public class TravelExpenseResourceTest extends AbstractDomainResourceSecurityTes
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void rootNotExported() throws Exception {
         assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void oneNotExported() throws Exception {
         assertThat(one(0L), isMethodNotAllowed());
     }
@@ -42,7 +42,7 @@ public class TravelExpenseResourceTest extends AbstractDomainResourceSecurityTes
 
     @Test
     @Ignore
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void createNotAllowedForOther() throws Exception {
         String json = jsonGenerator.start().withReportId(0L).build();
         assertThat(create(json), isForbidden());

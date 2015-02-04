@@ -1,22 +1,23 @@
 package de.techdev.trackr.domain.employee.login;
 
-import de.techdev.trackr.core.web.MockMvcTest;
+import de.techdev.test.OAuthRequest;
+import de.techdev.trackr.core.web.MockMvcTest2;
 import org.junit.Test;
-import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isAccessible;
+import static org.junit.Assert.assertThat;
 
-public class PrincipalControllerTest extends MockMvcTest {
+@OAuthRequest
+@Sql("resourceTest.sql")
+@Sql(value = "/de/techdev/trackr/domain/emptyDatabase.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+public class PrincipalControllerTest extends MockMvcTest2 {
 
     @Test
     public void principal() throws Exception {
-        mockMvc.perform(
-                get("/principal")
-                        .session(employeeSession("moritz.schulze@techdev.de")))
-               .andExpect(status().isOk())
-               .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+        ResponseEntity<String> response = restTemplate.getForEntity(host + "/principal", String.class);
+        assertThat(response, isAccessible());
     }
 }
 

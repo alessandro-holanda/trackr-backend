@@ -1,14 +1,12 @@
 package de.techdev.trackr.domain.employee.vacation;
 
-import de.techdev.trackr.IntegrationTest;
+import de.techdev.trackr.TransactionalIntegrationTest;
 import de.techdev.trackr.core.security.AuthorityMocks;
-import de.techdev.trackr.core.security.MethodSecurityConfiguration;
-import de.techdev.trackr.domain.ApiBeansConfiguration;
 import de.techdev.trackr.util.LocalDateUtil;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 
@@ -16,8 +14,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
-@ContextConfiguration(classes = { MethodSecurityConfiguration.class, ApiBeansConfiguration.class})
-public class VacationRequestApproveServiceIntegrationTest extends IntegrationTest {
+@ActiveProfiles("granular-security")
+public class VacationRequestApproveServiceIntegrationTest extends TransactionalIntegrationTest {
 
     @Autowired
     private VacationRequestDataOnDemand vacationRequestDataOnDemand;

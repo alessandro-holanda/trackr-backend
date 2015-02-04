@@ -2,8 +2,12 @@ spring:
     jpa:
         hibernate:
             naming_strategy: org.hibernate.cfg.EJB3NamingStrategy
+    datasource:
+        initialize: false
     profiles:
         active: in-memory-database,dev,granular-security,http-basic
+trackr:
+    frontendUrl: http://localhost
 
 ---
 spring:
@@ -16,19 +20,6 @@ spring:
     profiles: dev
     datasource:
         initialize: true
-trackr:
-    frontendUrl: http://localhost
-
----
-spring:
-    profiles: integration-test
-    datasource:
-        initialize: false
-    jpa:
-        hibernate:
-            ddl-auto: create
-trackr:
-    frontendUrl: http://localhost
 
 ---
 spring:

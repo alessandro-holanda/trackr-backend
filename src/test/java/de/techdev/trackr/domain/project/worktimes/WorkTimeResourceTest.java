@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.project.worktimes;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,8 +11,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
 public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
 
     private WorkTimeJsonGenerator jsonGenerator = new WorkTimeJsonGenerator();
@@ -33,7 +33,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void oneForbiddenForOther() throws Exception {
         assertThat(one(0L), isForbidden());
     }
@@ -51,14 +51,14 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
+    @OAuthRequest(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void updateAllowedForAdmin() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(w -> w.setId(0L)).build();
         assertThat(update(0L, json), isUpdated());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateNotAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(w -> w.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
@@ -70,13 +70,13 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
+    @OAuthRequest(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void deleteAllowedForAdmin() throws Exception {
         assertThat(remove(0L), isNoContent());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void deleteNotAllowedForSupervisor() throws Exception {
         assertThat(remove(0L), isForbidden());
     }
@@ -95,13 +95,13 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN")
+    @OAuthRequest(value = "ROLE_ADMIN")
     public void deleteEmployeeNotAllowed() throws Exception {
         assertThat(removeUrl("/workTimes/0/employee"), isForbidden());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN")
+    @OAuthRequest(value = "ROLE_ADMIN")
     public void deleteProjectNotAllowed() throws Exception {
         assertThat(removeUrl("/workTimes/0/project"), isForbidden());
     }
@@ -112,13 +112,13 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN", username = "admin@techdev.de")
+    @OAuthRequest(value = "ROLE_ADMIN", username = "admin@techdev.de")
     public void updateProjectAllowedForAdmin() throws Exception {
         assertThat(updateLink(0L, "project", "/projects/0"), isNoContent());
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void updateProjectForbiddenForSupervisor() throws Exception {
         assertThat(updateLink(0L, "project", "/projects/0"), isForbidden());
     }
@@ -131,7 +131,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void findByEmployeeAndDateOrderByStartTimeAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc?employee=0&date=2014-01-01", String.class);
@@ -139,7 +139,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_ADMIN")
+    @OAuthRequest(value = "ROLE_ADMIN")
     public void findByDateBetweenAllowedForAdmin() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
@@ -147,7 +147,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void findByDateBetweenForbiddenForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
@@ -162,7 +162,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
+    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
     public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc?employee=0&start=2014-01-01&end=2014-01-31", String.class);
@@ -176,7 +176,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
      */
     @Test
     @Ignore
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void findByEmployeeAndDateBetweenOrderByDateAscStartTimeAscForbiddenForOther() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByEmployeeAndDateBetweenOrderByDateAscStartTimeAsc?employee=0&start=2014-01-01&end=2014-01-31", String.class);
@@ -190,7 +190,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
      */
     @Test
     @Ignore
-    @OAuthToken(username = "someone.else@techdev.de")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void findByEmployeeAndDateOrderByStartTimeAscForbiddenForOther() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByEmployeeAndDateOrderByStartTimeAsc?employee=0&date=2014-01-01", String.class);
@@ -198,7 +198,7 @@ public class WorkTimeResourceTest extends AbstractDomainResourceSecurityTest {
     }
 
     @Test
-    @OAuthToken(value = "ROLE_SUPERVISOR")
+    @OAuthRequest(value = "ROLE_SUPERVISOR")
     public void findByProjectAndDateBetweenOrderByDateAscStartTimeAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate
                 .getForEntity(host + "/workTimes/search/findByProjectAndDateBetweenOrderByDateAscStartTimeAsc?project=0&start=2014-01-01&end=2014-01-31", String.class);

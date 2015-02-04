@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.employee.vacation;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Test;
 import org.springframework.test.context.jdbc.Sql;
@@ -10,8 +10,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.isMethodNotAl
 import static org.junit.Assert.assertThat;
 
 @Sql("holiday/resourceTest.sql")
-@Sql(value = "holiday/resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
 public class HolidayResourceTest extends AbstractDomainResourceSecurityTest {
 
     @Override

@@ -1,15 +1,12 @@
 package de.techdev.trackr.domain.employee.vacation.support;
 
-import de.techdev.trackr.IntegrationTest;
-import de.techdev.trackr.domain.ApiBeansConfiguration;
+import de.techdev.trackr.TransactionalIntegrationTest;
 import de.techdev.trackr.domain.employee.vacation.VacationRequest;
 import de.techdev.trackr.domain.employee.vacation.VacationRequestDataOnDemand;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = {ApiBeansConfiguration.class})
-public class VacationRequestNotifyServiceIntegrationTest extends IntegrationTest {
+public class VacationRequestNotifyServiceIntegrationTest extends TransactionalIntegrationTest {
 
     @Autowired
     private VacationRequestDataOnDemand vacationRequestDataOnDemand;

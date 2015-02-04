@@ -1,6 +1,6 @@
 package de.techdev.trackr.domain.project.billtimes;
 
-import de.techdev.test.OAuthToken;
+import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,8 +11,8 @@ import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
-@Sql(value = "resourceTestCleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@OAuthToken
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
 public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest {
 
     private BillableTimesJsonGenerator jsonGenerator = new BillableTimesJsonGenerator();
@@ -28,7 +28,7 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void oneAllowedForSupervisor() throws Exception {
         assertThat(one(0L), isAccessible());
     }
@@ -39,7 +39,7 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void createAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).build();
         assertThat(create(json), isCreated());
@@ -52,7 +52,7 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void deleteAllowedForSupervisor() throws Exception {
         assertThat(remove(0L), isNoContent());
     }
@@ -63,7 +63,7 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void updateAllowedForSupervisor() throws Exception {
         String json = jsonGenerator.start().withEmployeeId(0L).withProjectId(0L).apply(b -> b.setId(0L)).build();
         assertThat(update(0L, json), isUpdated());
@@ -80,25 +80,25 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void deleteEmployeeForbidden() throws Exception {
         assertThat(removeUrl("/billableTimes/0/employee"), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void deleteProjectForbidden() throws Exception {
         assertThat(removeUrl("/billableTimes/0/project"), isForbidden());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void updateEmployeeAllowedForSupervisor() throws Exception {
         assertThat(updateLink(0L, "employee", "/employees/0"), isNoContent());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void updateProjectAllowedForSupervisor() throws Exception {
         assertThat(updateLink(0L, "project", "/projects/0"), isNoContent());
     }
@@ -114,14 +114,14 @@ public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest
     }
 
     @Test
-    @OAuthToken("ROLE_ADMIN")
+    @OAuthRequest("ROLE_ADMIN")
     public void findByDateBetweenAllowedForAdmin() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/billableTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
         assertThat(response, isAccessible());
     }
 
     @Test
-    @OAuthToken("ROLE_SUPERVISOR")
+    @OAuthRequest("ROLE_SUPERVISOR")
     public void findByDateBetweenForbiddenForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/billableTimes/search/findByDateBetween?start=2014-01-01&end=2014-01-31", String.class);
         assertThat(response, isForbidden());
