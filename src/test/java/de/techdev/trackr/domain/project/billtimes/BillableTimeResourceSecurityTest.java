@@ -13,7 +13,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("resourceTest.sql")
 @Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthRequest
-public class BillableTimeResourceTest extends AbstractDomainResourceSecurityTest {
+public class BillableTimeResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private BillableTimesJsonGenerator jsonGenerator = new BillableTimesJsonGenerator();
 

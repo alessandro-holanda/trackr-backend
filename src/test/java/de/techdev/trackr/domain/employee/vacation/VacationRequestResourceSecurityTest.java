@@ -4,20 +4,17 @@ import de.techdev.test.OAuthRequest;
 import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @Sql("resourceTest.sql")
 @Sql("tableUuidMapping.sql")
 @Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthRequest
-public class VacationRequestResourceTest extends AbstractDomainResourceSecurityTest {
+public class VacationRequestResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private VacationRequestJsonGenerator jsonGenerator = new VacationRequestJsonGenerator();
 
@@ -185,32 +182,6 @@ public class VacationRequestResourceTest extends AbstractDomainResourceSecurityT
     public void findByStatusOrderBySubmissionTimeAscAllowedForSupervisor() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity(host + "/vacationRequests/search/findByStatusOrderBySubmissionTimeAsc?approved=APPROVED", String.class);
         assertThat(response, isAccessible());
-    }
-
-    @Test
-    @OAuthRequest("ROLE_SUPERVISOR")
-    public void approveNotAllowedForSupervisorOnOwnVacationRequest() throws Exception {
-        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
-        assertThat(response, isForbidden());
-        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
-        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
-    }
-
-    @Test
-    public void approveNotAllowedForEmployees() throws Exception {
-        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
-        assertThat(response, isForbidden());
-        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
-        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.PENDING));
-    }
-
-    @Test
-    @OAuthRequest(value = "ROLE_SUPERVISOR", username = "supervisor@techdev.de")
-    public void approveAllowedForOtherSupervisor() throws Exception {
-        ResponseEntity<String> response = restTemplate.exchange(host + "/vacationRequests/0/approve", HttpMethod.PUT, HttpEntity.EMPTY, String.class);
-        assertThat(response, isAccessible());
-        ResponseEntity<VacationRequest> vacationRequest = restTemplate.getForEntity(host + "/vacationRequests/0", VacationRequest.class);
-        assertThat(vacationRequest.getBody().getStatus(), is(VacationRequest.VacationRequestStatus.APPROVED));
     }
 
     @Test

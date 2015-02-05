@@ -11,7 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @Sql("resourceTest.sql")
 @Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @OAuthRequest
-public class CommentResourceTest extends AbstractDomainResourceSecurityTest {
+public class CommentResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
     private CommentJsonGenerator jsonGenerator = new CommentJsonGenerator();
 

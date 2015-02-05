@@ -8,9 +8,6 @@ import org.springframework.http.ResponseEntity;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author Moritz Schulze
- */
 public class DomainResourceTestMatchers2 {
 
     private DomainResourceTestMatchers2() {
@@ -56,7 +53,6 @@ public class DomainResourceTestMatchers2 {
     public static Matcher<? super ResponseEntity> isAccessible() {
         return new ResultActionsMatcher("accessible", response -> {
             assertEquals(HttpStatus.OK, response.getStatusCode());
-//                    .andExpect(content().contentType(MockMvcTest.STANDARD_CONTENT_TYPE));
         });
     }
 
@@ -66,7 +62,6 @@ public class DomainResourceTestMatchers2 {
     public static Matcher<? super ResponseEntity> isCreated() {
         return new ResultActionsMatcher("created", response -> {
             assertEquals(HttpStatus.CREATED, response.getStatusCode());
-//                    .andExpect(jsonPath("id", isNotNull()));
         });
     }
 
@@ -85,7 +80,6 @@ public class DomainResourceTestMatchers2 {
     public static Matcher<? super ResponseEntity> isUpdated() {
         return new ResultActionsMatcher("updated", response -> {
             assertEquals(HttpStatus.OK, response.getStatusCode());
-//                    .andExpect(jsonPath("id", isNotNull()));
         });
     }
 

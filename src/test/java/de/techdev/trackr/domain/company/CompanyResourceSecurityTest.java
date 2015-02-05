@@ -84,16 +84,6 @@ public class CompanyResourceSecurityTest extends AbstractDomainResourceSecurityT
         assertThat(updateViaPatch(0L, "{\"name\": \"test\"}"), isForbidden());
     }
 
-//    @Test
-//    public void constraintViolation() throws Exception {
-//        mockMvc.perform(
-//                post("/companies")
-//                        .session(adminSession())
-//                        .content("{ \"companyId\": \"1234\" }")
-//        )
-//               .andExpect(status().isBadRequest());
-//    }
-
     @Test
     @OAuthRequest("ROLE_SUPERVISOR")
     public void addContactPersonSupervisor() throws Exception {

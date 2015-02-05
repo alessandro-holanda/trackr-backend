@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
 @OAuthRequest
 @Sql("resourceTest.sql")
 @Sql(value = "/de/techdev/trackr/domain/emptyDatabase.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-public class PrincipalControllerTest extends MockMvcTest2 {
+public class PrincipalControllerSecurityTest extends MockMvcTest2 {
 
     @Test
     public void principal() throws Exception {
