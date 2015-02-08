@@ -39,20 +39,20 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
 
     @Test
     public void postAllowedForSupervisor() throws Exception {
-        String json = jsonGenerator.withCompanyId(0L).start().build();
+        String json = jsonGenerator.start().withCompanyId(0L).build();
         assertThat(create(json), isCreated());
     }
 
     @Test
     public void putAllowedForSupervisor() throws Exception {
-        String json = jsonGenerator.withCompanyId(0L).start().apply(c -> c.setId(0L)).build();
+        String json = jsonGenerator.start().withCompanyId(0L).apply(c -> c.setId(0L)).build();
         assertThat(update(0L, json), isUpdated());
     }
 
     @Test
     @OAuthRequest
     public void putNotAllowedForEmployee() throws Exception {
-        String json = jsonGenerator.withCompanyId(0L).start().apply(c -> c.setId(0L)).build();
+        String json = jsonGenerator.start().withCompanyId(0L).apply(c -> c.setId(0L)).build();
         assertThat(update(0L, json), isForbidden());
     }
 
@@ -70,7 +70,7 @@ public class ContactPersonResourceSecurityTest extends AbstractDomainResourceSec
     @Test
     @OAuthRequest
     public void postNotAllowedForEmployee() throws Exception {
-        String json = jsonGenerator.withCompanyId(0L).start().build();
+        String json = jsonGenerator.start().withCompanyId(0L).build();
         assertThat(create(json), isForbidden());
     }
 
