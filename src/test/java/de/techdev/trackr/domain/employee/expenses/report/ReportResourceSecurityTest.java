@@ -21,12 +21,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class ReportResourceTest extends AbstractDomainResourceTest2<Report> {
+public class ReportResourceSecurityTest extends AbstractDomainResourceTest2<Report> {
 
     private final Function<Report, MockHttpSession> sameEmployeeSessionProvider;
     private final Function<Report, MockHttpSession> otherEmployeeSessionProvider;
 
-    public ReportResourceTest() {
+    public ReportResourceSecurityTest() {
         this.sameEmployeeSessionProvider = travelExpenseReport -> employeeSession(travelExpenseReport.getEmployee().getEmail());
         this.otherEmployeeSessionProvider = travelExpenseReport -> employeeSession(travelExpenseReport.getEmployee().getEmail() + 1);
     }

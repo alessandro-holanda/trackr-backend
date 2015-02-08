@@ -57,4 +57,9 @@ public class ContactPersonJsonGenerator extends AbstractJsonGenerator<ContactPer
     protected ContactPersonJsonGenerator getSelf() {
         return this;
     }
+
+    @Override
+    protected void reset() {
+        companyId = null;
+    }
 }
