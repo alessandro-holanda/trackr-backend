@@ -1,35 +1,21 @@
 package de.techdev.trackr.domain.employee.expenses.report;
 
-import de.techdev.trackr.core.security.AuthorityMocks;
-import de.techdev.trackr.domain.AbstractDomainResourceTest;
-import de.techdev.trackr.domain.AbstractDomainResourceTest2;
-import de.techdev.trackr.domain.employee.expenses.reports.Report;
+import de.techdev.test.OAuthRequest;
+import de.techdev.trackr.domain.AbstractDomainResourceSecurityTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.core.context.SecurityContextHolder;
-
-import javax.json.stream.JsonGenerator;
-import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.function.Function;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
 
 import static de.techdev.trackr.domain.DomainResourceTestMatchers2.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class ReportResourceSecurityTest extends AbstractDomainResourceTest2<Report> {
+@Sql("resourceTest.sql")
+@Sql(value = AbstractDomainResourceSecurityTest.EMPTY_DATABASE_FILE, executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@OAuthRequest
+public class ReportResourceSecurityTest extends AbstractDomainResourceSecurityTest {
 
-    private final Function<Report, MockHttpSession> sameEmployeeSessionProvider;
-    private final Function<Report, MockHttpSession> otherEmployeeSessionProvider;
-
-    public ReportResourceSecurityTest() {
-        this.sameEmployeeSessionProvider = travelExpenseReport -> employeeSession(travelExpenseReport.getEmployee().getEmail());
-        this.otherEmployeeSessionProvider = travelExpenseReport -> employeeSession(travelExpenseReport.getEmployee().getEmail() + 1);
-    }
+    private ReportJsonGenerator jsonGenerator = new ReportJsonGenerator();
 
     @Override
     protected String getResourceName() {
@@ -37,96 +23,97 @@ public class ReportResourceSecurityTest extends AbstractDomainResourceTest2<Repo
     }
 
     @Test
+    @OAuthRequest("ROLE_ADMIN")
     public void rootNotExported() throws Exception {
-        assertThat(root(adminSession()), isMethodNotAllowed());
+        assertThat(root(), isMethodNotAllowed());
     }
 
     @Test
+    @OAuthRequest("ROLE_SUPERVISOR")
+    public void oneAllowedForSupervisor() throws Exception {
+        assertThat(one(0L), isAccessible());
+    }
+
+    @Test
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void oneNotAllowedForOther() throws Exception {
-        assertThat(one(otherEmployeeSessionProvider), isForbidden());
+        assertThat(one(0L), isForbidden());
     }
 
     @Test
     public void oneAllowedForSelf() throws Exception {
-        assertThat(one(sameEmployeeSessionProvider), isAccessible());
+        assertThat(one(0L), isAccessible());
     }
 
     @Test
     public void createAllowed() throws Exception {
-        assertThat(create(sameEmployeeSessionProvider), isCreated());
+        String json = jsonGenerator.start().withDebitorId(0L).withEmployeeId(0L).build();
+        assertThat(create(json), isCreated());
     }
 
     @Test
-    public void updateAllowedForSelf() throws Exception {
-        assertThat(update(sameEmployeeSessionProvider), isForbidden());
+    public void updateNotAllowedForSelf() throws Exception {
+        String json = jsonGenerator.start().withDebitorId(0L).withEmployeeId(0L).apply(r -> r.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
-    @Ignore
+    @Ignore("yields 400 instead of 403 ?")
+    @OAuthRequest(username = "someone.else@techdev.de")
     public void updateForbiddenForOther() throws Exception {
-        assertThat(update(otherEmployeeSessionProvider), isForbidden());
-    }
-
-    @Test
-    public void oneAllowedForSupervisor() throws Exception {
-        assertThat(one(supervisorSession()), isAccessible());
-    }
-
-    @Test
-    public void travelExpensesAllowedForSelf() throws Exception {
-        Report travelExpenseReport = dataOnDemand.getRandomObject();
-        assertThat(oneUrl(employeeSession(travelExpenseReport.getEmployee().getEmail()), "/travelExpenseReports/" + travelExpenseReport.getId() + "/expenses"), isAccessible());
-    }
-
-    @Test
-    public void updateEmployeeNotAllowedForSupervisor() throws Exception {
-        assertThat(updateLink(supervisorSession(), "employee", "/employees/0"), isForbidden());
-    }
-
-    @Test
-    public void deleteEmployeeNotAllowed() throws Exception {
-        Report travelExpenseReport = dataOnDemand.getRandomObject();
-        assertThat(removeUrl(supervisorSession(), "/travelExpenseReports/" + travelExpenseReport.getId() + "/employee"), isForbidden());
-    }
-
-    @Test
-    public void addTravelExpenseAllowedForSelf() throws Exception {
-        assertThat(updateLink(sameEmployeeSessionProvider, "expenses", "/travelExpenses/0"), isNoContent());
-    }
-
-    @Test
-    public void addTravelExpenseNotAllowedForOther() throws Exception {
-        assertThat(updateLink(otherEmployeeSessionProvider, "expenses", "/travelExpenses/0"), isForbidden());
+        String json = jsonGenerator.start().withDebitorId(0L).withEmployeeId(0L).apply(r -> r.setId(0L)).build();
+        assertThat(update(0L, json), isForbidden());
     }
 
     @Test
     public void deleteAllowedForOwnerIfPending() throws Exception {
-        Report travelExpenseReport = dataOnDemand.getRandomObject();
-        travelExpenseReport.setStatus(Report.Status.PENDING);
-        repository.save(travelExpenseReport);
-        assertThat(removeUrl(employeeSession(travelExpenseReport.getEmployee().getEmail()), "/travelExpenseReports/" + travelExpenseReport.getId()), isNoContent());
-    }
-
-    @Test
-    public void deleteAllowedForAdmin() throws Exception {
-        assertThat(remove(adminSession()), isNoContent());
-    }
-
-    @Test
-    public void deleteForbiddenForOtherEvenIfPending() throws Exception {
-        Report travelExpenseReport = dataOnDemand.getRandomObject();
-        travelExpenseReport.setStatus(Report.Status.PENDING);
-        repository.save(travelExpenseReport);
-        assertThat(removeUrl(employeeSession(travelExpenseReport.getEmployee().getEmail() + 1), "/travelExpenseReports/" + travelExpenseReport.getId()), isForbidden());
+        assertThat(remove(0L), isNoContent());
     }
 
     @Test
     public void deleteForbiddenForOwnerIfSubmitted() throws Exception {
-        Report travelExpenseReport = dataOnDemand.getRandomObject();
-        travelExpenseReport.setStatus(Report.Status.SUBMITTED);
-        repository.save(travelExpenseReport);
-        assertThat(removeUrl(employeeSession(travelExpenseReport.getEmployee().getEmail()), "/travelExpenseReports/" + travelExpenseReport.getId()), isForbidden());
+        assertThat(remove(1L), isForbidden());
     }
+
+    @Test
+    @OAuthRequest("ROLE_ADMIN")
+    public void deleteAllowedForAdmin() throws Exception {
+        assertThat(remove(0L), isNoContent());
+    }
+
+    @Test
+    @OAuthRequest(username = "someone.else@techdev.de")
+    public void deleteForbiddenForOtherEvenIfPending() throws Exception {
+        assertThat(remove(0L), isForbidden());
+    }
+
+    @Test
+    @OAuthRequest("ROLE_SUPERVISOR")
+    public void pdfExport() throws Exception {
+        ResponseEntity<byte[]> response = restTemplate.getForEntity(host + "/travelExpenseReports/0/pdf", byte[].class);
+        assertThat(response, isAccessible());
+    }
+
+    @Test
+    public void pdfExportAsEmployee() throws Exception {
+        ResponseEntity<byte[]> response = restTemplate.getForEntity(host + "/travelExpenseReports/0/pdf", byte[].class);
+        assertThat(response, isAccessible());
+    }
+
+//    @Test
+//    public void updateEmployeeNotAllowedForSupervisor() throws Exception {
+//        assertThat(updateLink(supervisorSession(), "employee", "/employees/0"), isForbidden());
+//    }
+
+//    @Test
+//    public void addTravelExpenseAllowedForSelf() throws Exception {
+//        assertThat(updateLink(sameEmployeeSessionProvider, "expenses", "/travelExpenses/0"), isNoContent());
+//    }
+
+//    @Test
+//    public void addTravelExpenseNotAllowedForOther() throws Exception {
+//        assertThat(updateLink(otherEmployeeSessionProvider, "expenses", "/travelExpenses/0"), isForbidden());
+//    }
 
 //    @Test
 //    public void submitNotAllowedForOtherSupervisor() throws Exception {
@@ -194,46 +181,4 @@ public class ReportResourceSecurityTest extends AbstractDomainResourceTest2<Repo
 //
 //    }
 
-//    @Test
-//    public void pdfExport() throws Exception {
-//        Report report = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/travelExpenseReports/" + report.getId() + "/pdf")
-//                        .session(supervisorSession())
-//        )
-//                .andExpect(status().isOk());
-//    }
-
-//    @Test
-//    public void pdfExportAsEmployee() throws Exception {
-//        Report report = dataOnDemand.getRandomObject();
-//        mockMvc.perform(
-//                get("/travelExpenseReports/" + report.getId() + "/pdf")
-//                        .session(employeeSession(report.getEmployee().getEmail()))
-//        )
-//                .andExpect(status().isOk());
-//    }
-
-    @Override
-    protected String getJsonRepresentation(Report travelExpenseReport) {
-        StringWriter writer = new StringWriter();
-        JsonGenerator jg = jsonGeneratorFactory.createGenerator(writer);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        jg.writeStartObject()
-          .write("status", travelExpenseReport.getStatus().toString())
-          .write("employee", "/employees/" + travelExpenseReport.getEmployee().getId())
-          .write("debitor", "/companies/" + travelExpenseReport.getDebitor().getId());
-
-        if(travelExpenseReport.getSubmissionDate() != null) {
-            jg.write("submissionDate", sdf.format(travelExpenseReport.getSubmissionDate()));
-        }
-        if (travelExpenseReport.getProject() != null) {
-            jg.write("project", "/projects/" + travelExpenseReport.getProject().getId());
-        }
-        if (travelExpenseReport.getId() != null) {
-            jg.write("id", travelExpenseReport.getId());
-        }
-        jg.writeEnd().close();
-        return writer.toString();
-    }
 }

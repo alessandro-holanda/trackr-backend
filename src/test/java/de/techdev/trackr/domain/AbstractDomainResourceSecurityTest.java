@@ -49,7 +49,7 @@ public abstract class AbstractDomainResourceSecurityTest extends MockMvcTest2 {
      * Perform a PUT on a link of a random resource (with header Content-Type: text/uri-list)
      *
      * @param linkName    The name of the link, will be appended to the URI of the resource (e.g. /company/0/contactPersons -> linkName = contactPersons).
-     * @param linkContent The content to PUT, e.g. /contactersons/0
+     * @param linkContent The content to PUT, e.g. /contactPersons/0
      */
     protected ResponseEntity updateLink(Long id, String linkName, String linkContent) throws Exception {
         LinkedMultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
